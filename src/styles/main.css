@@ -147,10 +147,12 @@ body {
   border-color: var(--accent);
 }
 .menu__footer {
+  position: fixed;
+  left: 0;
+  bottom: 0;
   display: flex;
-  justify-content: center;
-  max-width: 900px;
-  margin: 0 auto 40px;
+  justify-content: flex-start;
+  padding: 24px;
 }
 .menu__edit-players {
   font-size: 1.1rem;
