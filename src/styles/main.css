@@ -420,6 +420,110 @@ body {
   cursor: default;
 }
 
+/* Ring point numerals: the value of each ring, laid along the horizontal centre
+   line from the outer ring in to the bullseye so a referee can read the scoring
+   at a glance across the room. Bold cream with a dark halo so they stay legible
+   over both the dark rings and the red bullseye. Visual only — taps fall through
+   to the disc beneath. Sized in viewBox units (the SVG is 0..1000). */
+.rt__num {
+  fill: #f4f4f2;
+  font-size: 52px;
+  font-weight: 800;
+  text-anchor: middle;
+  dominant-baseline: central;
+  font-variant-numeric: tabular-nums;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.6);
+  stroke-width: 5;
+  pointer-events: none;
+}
+
+/* ---- Hit feedback (target boards) ----
+   A one-shot overlay dropped on <body> at the tap point: a marker ring showing
+   where the axe landed and a floating "+N" points chip that rises and fades.
+   Lives above the board (which re-renders on every throw) but below the error
+   banner / info card, and never traps taps. Colour comes from --hitfx-color,
+   set per zone by the board. */
+.hitfx {
+  position: fixed;
+  z-index: 1400;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+.hitfx__marker {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 34px;
+  height: 34px;
+  margin: -17px 0 0 -17px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--hitfx-color) 22%, transparent);
+  border: 3px solid var(--hitfx-color);
+  box-shadow:
+    0 0 10px 2px color-mix(in srgb, var(--hitfx-color) 55%, transparent),
+    0 1px 4px rgba(0, 0, 0, 0.6);
+  animation: hitfx-pop 0.28s ease-out;
+}
+.hitfx__pts {
+  position: absolute;
+  left: 50%;
+  bottom: 50%;
+  transform: translateX(-50%);
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--hitfx-color);
+  text-shadow:
+    0 2px 2px rgba(0, 0, 0, 0.65),
+    0 0 10px rgba(0, 0, 0, 0.45);
+  font-variant-numeric: tabular-nums;
+  animation: hitfx-rise 0.95s ease-out forwards;
+}
+@keyframes hitfx-pop {
+  from {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes hitfx-rise {
+  from {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  to {
+    opacity: 0;
+    transform: translate(-50%, -70px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hitfx__marker {
+    animation: none;
+  }
+  /* Skip the drift, but still fade out so the chip doesn't linger for the full
+     removal timeout on the projected display. */
+  .hitfx__pts {
+    animation: hitfx-fade 0.95s ease-out forwards;
+  }
+  @keyframes hitfx-fade {
+    from {
+      opacity: 1;
+    }
+    to {
+      opacity: 0;
+    }
+  }
+}
+
 /* ---- Interactive 501 dartboard ----
    Same projector-first framing as the target (big square SVG, bold status,
    large controls), but the board itself keeps the realistic dartboard look

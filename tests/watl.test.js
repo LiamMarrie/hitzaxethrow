@@ -44,7 +44,7 @@ describe('watl applyThrow', () => {
 });
 
 describe('renderWatlBoard', () => {
-  it('renders 5 rings + 5-dot cluster + 4 killshot = 14 zones', () => {
+  it('renders 5 rings + red bullseye + 4-dot cluster + 4 killshot = 14 zones', () => {
     const board = renderWatlBoard(watl.createState(players), {
       onThrow: noop,
       onUndo: noop,
@@ -52,7 +52,7 @@ describe('renderWatlBoard', () => {
     expect(board.querySelector('svg.tb__svg')).not.toBeNull();
     expect(board.querySelectorAll('.tb__zone').length).toBe(14);
     expect(board.querySelectorAll('.rt__killshot').length).toBe(4);
-    expect(board.querySelectorAll('.rt__cluster').length).toBe(5);
+    expect(board.querySelectorAll('.rt__cluster').length).toBe(4);
   });
 
   it('scores 8 when a killshot dot is tapped', () => {

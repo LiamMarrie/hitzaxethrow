@@ -15,12 +15,17 @@
  *
  * Layering matches the prototypes so taps resolve correctly: a full-board miss
  * rect at the back, then the scoring discs largest-first (smaller rings on top
- * so an inner tap scores the inner ring), then the white ring lines (visual
- * only — pointer-events off), then the spot dots on top (so a dot always wins
- * the tap over the disc beneath it).
+ * so an inner tap scores the inner ring), then the white ring lines and the
+ * horizontal point numerals (both visual only — pointer-events off), then the
+ * spot dots on top (so a dot always wins the tap over the disc beneath it).
+ *
+ * Every tap also drops a transient hit marker + floating "+N" points chip at the
+ * tap point via ui/hit-feedback.js, so the referee gets clear "the target was
+ * hit" feedback even though recording the throw immediately re-renders the board.
  */
 
 import { el } from './render.js';
+import { showHitFeedback } from './hit-feedback.js';
 import {
   activePosition,
   positionForPlayer,
@@ -89,14 +94,47 @@ function ariaFor(label, points) {
 }
 
 /**
+ * The colour tone a zone contributes to its hit-feedback chip/marker.
+ *  - a filled disc is the red bullseye ('bull'); a plain disc is a ring;
+ *  - a cluster spot is the red bullseye tone, killshot/clutch are blue.
+ * @param {Disc} disc
+ * @returns {string}
+ */
+function discTone(disc) {
+  return disc.fill ? 'bull' : 'ring';
+}
+
+/**
+ * Resolve the viewport coordinates of a tap for the hit-feedback overlay. Uses
+ * the pointer position when present (a real tap/click), and falls back to the
+ * centre of the activated element for keyboard activation (Enter/Space fire a
+ * click with no pointer coordinates) or headless environments.
+ * @param {Event} event the click event
+ * @returns {{x:number, y:number}}
+ */
+function pointerXY(event) {
+  const hasPointer =
+    event &&
+    typeof event.clientX === 'number' &&
+    (event.clientX !== 0 || event.clientY !== 0);
+  if (hasPointer) return { x: event.clientX, y: event.clientY };
+  const target = event?.currentTarget ?? event?.target;
+  if (target && typeof target.getBoundingClientRect === 'function') {
+    const rect = target.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  }
+  return { x: 0, y: 0 };
+}
+
+/**
  * One tappable scoring disc (a filled circle). Dark by default, or the disc's
  * own fill (used for the red bullseye). The whole circle is the tap target.
  * @param {Disc} disc
- * @param {(value:number)=>void} onPick
+ * @param {(value:number, tone:string, event:Event)=>void} onHit
  * @param {boolean} disabled
  * @returns {SVGElement}
  */
-function discZone(disc, onPick, disabled) {
+function discZone(disc, onHit, disabled) {
   return svg('circle', {
     class: `tb__zone rt__disc${disabled ? ' tb__zone--disabled' : ''}`,
     cx: CX,
@@ -106,7 +144,9 @@ function discZone(disc, onPick, disabled) {
     role: 'button',
     tabindex: disabled ? -1 : 0,
     'aria-label': ariaFor(disc.label, disc.points),
-    ...(disabled ? {} : { onClick: () => onPick(disc.points) }),
+    ...(disabled
+      ? {}
+      : { onClick: (e) => onHit(disc.points, discTone(disc), e) }),
   });
 }
 
@@ -127,13 +167,38 @@ function ringLine(disc, lineWidth) {
 }
 
 /**
+ * The point-value numerals for each disc, laid out horizontally from the outer
+ * ring in to the centre (the referee reads "1 2 3 …" marching toward the
+ * bullseye). Each numeral sits at the middle of its ring's visible band on the
+ * horizontal centre line. Visual only — pointer-events are off so taps fall
+ * through to the disc beneath, and they're aria-hidden because each disc already
+ * carries a spoken label.
+ * @param {Disc[]} discs concentric discs, largest first
+ * @returns {SVGElement[]}
+ */
+function ringNumbers(discs) {
+  return discs.map((disc, i) => {
+    const innerR = discs[i + 1]?.r ?? 0; // centre for the innermost disc
+    const bandMid = (disc.r + innerR) / 2;
+    return svg('text', {
+      class: 'rt__num',
+      x: CX - bandMid,
+      y: CY,
+      'aria-hidden': 'true',
+      text: String(disc.points),
+    });
+  });
+}
+
+/**
  * One tappable spot dot (bullseye cluster, killshot, or clutch).
  * @param {Spot} spot
- * @param {(value:number)=>void} onPick
+ * @param {(value:number, tone:string, event:Event)=>void} onHit
  * @param {boolean} disabled
  * @returns {SVGElement}
  */
-function spotZone(spot, onPick, disabled) {
+function spotZone(spot, onHit, disabled) {
+  const tone = spot.kind === 'cluster' ? 'bull' : 'kill';
   return svg('circle', {
     class: `tb__zone rt__${spot.kind}${disabled ? ' tb__zone--disabled' : ''}`,
     cx: spot.cx,
@@ -142,18 +207,18 @@ function spotZone(spot, onPick, disabled) {
     role: 'button',
     tabindex: disabled ? -1 : 0,
     'aria-label': ariaFor(spot.label, spot.points),
-    ...(disabled ? {} : { onClick: () => onPick(spot.points) }),
+    ...(disabled ? {} : { onClick: (e) => onHit(spot.points, tone, e) }),
   });
 }
 
 /**
  * Render the target SVG from a zone spec, in prototype layering order.
  * @param {ZoneSpec} spec
- * @param {(value:number)=>void} onPick
+ * @param {(value:number, tone:string, event:Event)=>void} onHit
  * @param {boolean} disabled whole board disabled (game complete)
  * @returns {SVGElement}
  */
-function renderTargetSvg(spec, onPick, disabled) {
+function renderTargetSvg(spec, onHit, disabled) {
   // Full-board miss zone at the back — tapping off the rings scores 0, matching
   // the prototypes. Pointer-only (aria-hidden); the MISS button is the
   // keyboard/screen-reader accessible way to record a miss.
@@ -164,12 +229,13 @@ function renderTargetSvg(spec, onPick, disabled) {
     width: 1000,
     height: 1000,
     'aria-hidden': 'true',
-    ...(disabled ? {} : { onClick: () => onPick(0) }),
+    ...(disabled ? {} : { onClick: (e) => onHit(0, 'miss', e) }),
   });
 
-  const discs = spec.discs.map((d) => discZone(d, onPick, disabled));
+  const discs = spec.discs.map((d) => discZone(d, onHit, disabled));
   const lines = spec.discs.map((d) => ringLine(d, spec.lineWidth));
-  const spots = spec.spots.map((s) => spotZone(s, onPick, disabled));
+  const numbers = ringNumbers(spec.discs);
+  const spots = spec.spots.map((s) => spotZone(s, onHit, disabled));
 
   return svg(
     'svg',
@@ -179,7 +245,7 @@ function renderTargetSvg(spec, onPick, disabled) {
       role: 'group',
       'aria-label': spec.ariaLabel,
     },
-    [missZone, ...discs, ...lines, ...spots]
+    [missZone, ...discs, ...lines, ...numbers, ...spots]
   );
 }
 
@@ -231,19 +297,24 @@ export function renderRingTargetBoard(
   spec
 ) {
   const done = isComplete(state);
-  const onPick = (value) => {
+  // A tap on any zone: first drop the hit marker + floating points at the tap
+  // point (this overlay lives on <body>, so it survives the re-render that
+  // recording the throw triggers), then record the throw.
+  const onHit = (value, tone, event) => {
     if (done) return;
+    const { x, y } = pointerXY(event);
+    showHitFeedback({ x, y, points: value, tone });
     onThrow(value);
   };
 
-  const targetSvg = renderTargetSvg(spec, onPick, done);
+  const targetSvg = renderTargetSvg(spec, onHit, done);
 
   const missBtn = el('button', {
     class: 'btn tb__miss',
     text: 'MISS · 0',
     'aria-label': 'Miss, 0 points',
     disabled: done,
-    onClick: () => onPick(0),
+    onClick: (e) => onHit(0, 'miss', e),
   });
 
   const undoBtn = el('button', {
