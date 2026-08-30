@@ -60,6 +60,16 @@ body {
   font-size: 1.4rem;
   margin: 0;
   letter-spacing: 0.5px;
+  /* Holds the logo image; keep it a tight box so the header stays compact. */
+  display: flex;
+  align-items: center;
+  line-height: 0;
+}
+/* Small header logo (replaces the "Axe Throw Scoreboard" wordmark). */
+.app__logo {
+  height: 40px;
+  width: auto;
+  display: block;
 }
 
 .app__header-right {
@@ -1096,27 +1106,66 @@ body {
   max-width: 100%;
   /* 7 columns x 6 rows. */
   aspect-ratio: 7 / 6;
-  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 10px 26px rgba(0, 0, 0, 0.55));
 }
 
-/* Discs pop in as they land. */
+/* The moulded blue frame: a soft inner top-light and a darker base edge give
+   it depth beyond the flat panel colour. */
+.c4__panel {
+  stroke: rgba(10, 40, 96, 0.9);
+  stroke-width: 3;
+  paint-order: stroke;
+}
+
+/* Played discs are dimensional (radial-gradient fill) and pop in as they land.
+   The most recent disc instead falls from the top of its column. */
 .c4__disc {
   transform-box: fill-box;
   transform-origin: center;
   animation: ttt-pop 0.22s cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
+.c4__disc--last {
+  /* Travel from --fall (a negative Y offset set per-disc) down to rest, with a
+     small settle at the bottom. */
+  animation: c4-drop 0.42s cubic-bezier(0.34, 0.2, 0.4, 1) both;
+}
 
-/* Column tap targets: highlight the whole column on hover / press so the
-   referee sees where the disc will drop. */
+/* Last-move ring: a subtle white ring on the disc just dropped, so it's clear
+   what changed. It falls in alongside its disc. */
+.c4__last-ring {
+  stroke: rgba(255, 255, 255, 0.92);
+  stroke-width: 5;
+  transform-box: fill-box;
+  transform-origin: center;
+  filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.55));
+  animation: c4-drop 0.42s cubic-bezier(0.34, 0.2, 0.4, 1) both;
+}
+
+/* Column tap targets. On press (touch) flash the column so the tap registers
+   visibly; the rounded rx softens the flash to match the frame. */
 .c4__col {
   cursor: pointer;
 }
-.c4__col:hover,
 .c4__col:active {
-  fill: rgba(255, 255, 255, 0.1);
+  fill: rgba(255, 255, 255, 0.12);
+}
+.c4__col:focus-visible {
+  fill: rgba(255, 255, 255, 0.08);
+  outline: none;
 }
 .c4__col--disabled {
   cursor: default;
+}
+
+/* A faint veil over a filled column so closed columns read at a glance. */
+.c4__col-full {
+  fill: rgba(15, 17, 21, 0.34);
+}
+
+/* Once won, non-winning discs dim so the winning four stands out. */
+.c4__svg--won .c4__disc:not(.c4__disc--win) {
+  opacity: 0.42;
+  transition: opacity 0.3s ease;
 }
 
 /* Winning four: a bright glowing ring over each disc. */
@@ -1152,8 +1201,27 @@ body {
     stroke-width: 8;
   }
 }
+/* The dropped disc falls from --fall (negative Y) to rest, with a tiny settle. */
+@keyframes c4-drop {
+  0% {
+    transform: translateY(var(--fall, -600px));
+    opacity: 0.85;
+  }
+  80% {
+    transform: translateY(0);
+  }
+  90% {
+    transform: translateY(-2%);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   .c4__disc,
+  .c4__disc--last,
+  .c4__last-ring,
   .c4__win,
   .c4__status--done .c4__status-done {
     animation: none;
@@ -1277,7 +1345,11 @@ body {
 /* face-down cover with the "?" */
 .pairs__face--cover {
   background:
-    radial-gradient(60% 60% at 50% 45%, rgba(139, 124, 240, 0.16), transparent 70%),
+    radial-gradient(
+      60% 60% at 50% 45%,
+      rgba(139, 124, 240, 0.16),
+      transparent 70%
+    ),
     #090a0d;
   border: 1.5px solid rgba(228, 234, 255, 0.5);
   box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
@@ -1323,7 +1395,11 @@ body {
 /* Joker face */
 .pairs__face--reveal.joker {
   background:
-    radial-gradient(70% 70% at 50% 45%, rgba(139, 124, 240, 0.16), transparent 72%),
+    radial-gradient(
+      70% 70% at 50% 45%,
+      rgba(139, 124, 240, 0.16),
+      transparent 72%
+    ),
     linear-gradient(160deg, #fbfaf5, #e9e5d8);
 }
 .pairs__joker {
@@ -1523,29 +1599,12 @@ body {
   opacity: 0;
   pointer-events: none;
 }
-.loading__spinner {
-  width: 56px;
-  height: 56px;
-  border: 5px solid rgba(255, 255, 255, 0.25);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: loading-spin 0.9s linear infinite;
-}
-.loading__text {
-  margin: 0;
-  font-size: 1.2rem;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-}
-@keyframes loading-spin {
-  to {
-    transform: rotate(360deg);
-  }
+/* Just the roundel logo, sized to a comfortable share of the screen. */
+.loading__logo {
+  width: min(60vw, 60vh, 480px);
+  height: auto;
 }
 @media (prefers-reduced-motion: reduce) {
-  .loading__spinner {
-    animation: none;
-  }
   .loading {
     transition: none;
   }
@@ -1571,10 +1630,10 @@ body {
 
 .info-card {
   position: relative;
-  width: min(560px, 90vw);
-  max-height: 80vh;
+  width: min(760px, 92vw);
+  max-height: 88vh;
   overflow-y: auto;
-  padding: 28px 28px 32px;
+  padding: 40px 44px 44px;
   background: var(--surface);
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -1616,18 +1675,18 @@ body {
 }
 
 .info-card__title {
-  margin: 0 40px 16px 0; /* keep clear of the close button */
-  font-size: 1.5rem;
+  margin: 0 48px 22px 0; /* keep clear of the close button */
+  font-size: 1.9rem;
 }
 .info-card__body {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
 }
 .info-card__p {
   margin: 0;
-  font-size: 1.05rem;
-  line-height: 1.5;
+  font-size: 1.25rem;
+  line-height: 1.6;
   color: var(--text);
 }
 

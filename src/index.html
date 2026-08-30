@@ -14,13 +14,20 @@
          script runs) so the app never flashes an unstyled/half-built screen
          during initialization. main.js hides it once boot completes. -->
     <div id="loading" class="loading" role="status" aria-live="polite">
-      <div class="loading__spinner" aria-hidden="true"></div>
-      <p class="loading__text">Loading…</p>
+      <img
+        class="loading__logo"
+        src="./hitz-roundel.webp"
+        alt="Hitz"
+        width="480"
+        height="480"
+      />
     </div>
 
     <div id="app" class="app">
       <header class="app__header">
-        <h1 class="app__title">Axe Throw Scoreboard</h1>
+        <h1 class="app__title">
+          <img class="app__logo" src="./hitz-logo.webp" alt="Hitz" />
+        </h1>
         <div class="app__header-right">
           <span
             id="session-badge"

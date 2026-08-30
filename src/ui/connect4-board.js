@@ -12,9 +12,12 @@
  *   - player 1 -> accent-2 teal
  *
  * Rendering order (back to front):
- *   1. disc circles (filled = a played disc, dark = an empty hole)
- *   2. the blue board panel, drawn as a path with circular holes cut out
- *      (even-odd rule) so the discs/holes below show through
+ *   1. disc circles (filled = a played disc, dark = an empty hole). The most
+ *      recently dropped disc falls from the top of its column into place and
+ *      wears a "last move" ring — the tablet-friendly cue for what just happened.
+ *   2. the blue board panel, drawn as a rounded path with circular holes cut out
+ *      (even-odd rule) so the discs/holes below show through, with a moulded
+ *      depth gradient
  *   3. per-column transparent hit targets
  *   4. the winning-four glow ring overlay
  */
@@ -30,6 +33,8 @@ const GAP = 12;
 const R = CELL / 2 - GAP; // disc / hole radius
 const W = COLS * CELL;
 const H = ROWS * CELL;
+// The rounded outer corners of the moulded board frame.
+const FRAME_RADIUS = 28;
 
 const BOARD_BLUE = '#1f6feb'; // matches the target board's outer-ring blue
 const HOLE_DARK = '#0f1115'; // --bg, so empty holes read as the app background
@@ -65,38 +70,101 @@ function cellCenter(row, col) {
 }
 
 /**
- * Layer 1: the disc / hole circles. A played cell shows its player's colour;
- * an empty cell shows the dark background so it reads as an open hole.
+ * Reusable SVG <defs>: radial gradients that give each disc an off-centre
+ * highlight and a darker rim so it reads as a physical checker rather than a
+ * flat circle, plus a soft depth shadow for the moulded frame.
+ * @returns {SVGElement}
+ */
+function renderDefs() {
+  const discGradient = (id, light, base, dark) =>
+    svg('radialGradient', { id, cx: '38%', cy: '32%', r: '75%' }, [
+      svg('stop', { offset: '0%', 'stop-color': light }),
+      svg('stop', { offset: '55%', 'stop-color': base }),
+      svg('stop', { offset: '100%', 'stop-color': dark }),
+    ]);
+  // A faint top-lit sheen over the blue frame.
+  const frameGradient = svg(
+    'linearGradient',
+    { id: 'c4-frame', x1: '0', y1: '0', x2: '0', y2: '1' },
+    [
+      svg('stop', { offset: '0%', 'stop-color': '#3a86f5' }),
+      svg('stop', { offset: '45%', 'stop-color': BOARD_BLUE }),
+      svg('stop', { offset: '100%', 'stop-color': '#1656c4' }),
+    ]
+  );
+  return svg('defs', {}, [
+    discGradient('c4-disc-x', '#ff8a72', DISC_X, '#c23417'),
+    discGradient('c4-disc-o', '#6fe6cf', DISC_O, '#1c8f78'),
+    frameGradient,
+  ]);
+}
+
+/**
+ * Layer 1: the disc / hole circles. A played cell shows its player's colour
+ * (as a dimensional gradient); an empty cell shows the dark background so it
+ * reads as an open hole. The most recently dropped disc falls in from the top
+ * of its column and carries a "last move" ring.
  * @param {import('../games/connect4.js').GameState} state
  * @param {string[]} playerNames
  * @returns {SVGElement}
  */
 function renderDiscs(state, playerNames) {
-  const circles = [];
+  const lastCell =
+    state.moves.length > 0 ? state.moves[state.moves.length - 1] : -1;
+  const winCells = new Set(state.line ?? []);
+  const layers = [];
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
-      const value = state.board[row * COLS + col];
+      const cell = row * COLS + col;
+      const value = state.board[cell];
       const { cx, cy } = cellCenter(row, col);
-      const fill = value === 0 ? DISC_X : value === 1 ? DISC_O : HOLE_DARK;
-      const label =
-        value === null
-          ? undefined
-          : `${playerNames[value]} disc, row ${ROWS - row}, column ${col + 1}`;
-      circles.push(
-        svg('circle', {
-          cx,
-          cy,
-          r: R,
-          fill,
-          class: value === null ? 'c4__hole' : 'c4__disc',
-          ...(label
-            ? { role: 'img', 'aria-label': label }
-            : { 'aria-hidden': 'true' }),
-        })
-      );
+      if (value === null) {
+        layers.push(
+          svg('circle', {
+            cx,
+            cy,
+            r: R,
+            fill: HOLE_DARK,
+            class: 'c4__hole',
+            'aria-hidden': 'true',
+          })
+        );
+        continue;
+      }
+      const isLast = cell === lastCell;
+      const isWin = winCells.has(cell);
+      const label = `${playerNames[value]} disc, row ${ROWS - row}, column ${col + 1}${isLast ? ' (last move)' : ''}`;
+      // How far (in cells) this disc "falls" — from above the top row down to
+      // its resting row. The CSS animation reads --fall to travel that distance.
+      const fallCells = row + 1;
+      const disc = svg('circle', {
+        cx,
+        cy,
+        r: R,
+        fill: `url(#${value === 0 ? 'c4-disc-x' : 'c4-disc-o'})`,
+        class: `c4__disc${isLast ? ' c4__disc--last' : ''}${isWin ? ' c4__disc--win' : ''}`,
+        style: isLast ? `--fall:${-fallCells * CELL}px` : undefined,
+        role: 'img',
+        'aria-label': label,
+      });
+      layers.push(disc);
+      if (isLast) {
+        // The last-move ring sits over its disc so it reads on a projector.
+        layers.push(
+          svg('circle', {
+            cx,
+            cy,
+            r: R - 6,
+            fill: 'none',
+            class: 'c4__last-ring',
+            style: `--fall:${-fallCells * CELL}px`,
+            'aria-hidden': 'true',
+          })
+        );
+      }
     }
   }
-  return svg('g', {}, circles);
+  return svg('g', {}, layers);
 }
 
 /**
@@ -106,7 +174,15 @@ function renderDiscs(state, playerNames) {
  * @returns {SVGElement}
  */
 function renderBoardPanel() {
-  let d = `M0,0 H${W} V${H} H0 Z`;
+  const rr = FRAME_RADIUS;
+  // A rounded-rectangle outer sub-path (moulded frame corners), traced
+  // clockwise: top edge, right, bottom, left, with an arc at each corner.
+  let d =
+    `M${rr},0 H${W - rr}` +
+    ` A${rr},${rr} 0 0,1 ${W},${rr} V${H - rr}` +
+    ` A${rr},${rr} 0 0,1 ${W - rr},${H} H${rr}` +
+    ` A${rr},${rr} 0 0,1 0,${H - rr} V${rr}` +
+    ` A${rr},${rr} 0 0,1 ${rr},0 Z`;
   for (let row = 0; row < ROWS; row++) {
     for (let col = 0; col < COLS; col++) {
       const { cx, cy } = cellCenter(row, col);
@@ -120,7 +196,7 @@ function renderBoardPanel() {
   return svg('path', {
     d,
     'fill-rule': 'evenodd',
-    fill: BOARD_BLUE,
+    fill: 'url(#c4-frame)',
     class: 'c4__panel',
     'aria-hidden': 'true',
   });
@@ -128,7 +204,9 @@ function renderBoardPanel() {
 
 /**
  * Layer 3: one transparent, full-height tap target per column. Tapping drops
- * into that column. Disabled columns (full, or game over) are inert.
+ * into that column. Disabled columns (full, or game over) are inert. A full
+ * (but not game-over) column also shows a faint "column full" veil so the
+ * referee sees at a glance which columns are closed.
  * @param {import('../games/connect4.js').GameState} state
  * @param {boolean} locked whole board locked (game complete)
  * @param {(col:number)=>void} onPick
@@ -140,12 +218,28 @@ function renderColumnTargets(state, locked, onPick) {
     // A column is full when its top cell is occupied.
     const full = state.board[col] !== null;
     const active = !locked && !full;
+    // Only flag a full column while play continues; on game over the whole
+    // board is locked and a per-column veil would just be noise.
+    if (full && !locked) {
+      targets.push(
+        svg('rect', {
+          x: col * CELL + 6,
+          y: 6,
+          width: CELL - 12,
+          height: H - 12,
+          rx: 22,
+          class: 'c4__col-full',
+          'aria-hidden': 'true',
+        })
+      );
+    }
     targets.push(
       svg('rect', {
         x: col * CELL,
         y: 0,
         width: CELL,
         height: H,
+        rx: 18,
         fill: 'transparent',
         class: `c4__col${active ? '' : ' c4__col--disabled'}`,
         role: 'button',
@@ -192,6 +286,7 @@ function renderWinOverlay(line) {
 function renderBoardSvg(state, playerNames, onPick) {
   const locked = isComplete(state);
   const children = [
+    renderDefs(),
     renderDiscs(state, playerNames),
     renderBoardPanel(),
     renderColumnTargets(state, locked, onPick),
@@ -201,7 +296,8 @@ function renderBoardSvg(state, playerNames, onPick) {
   return svg(
     'svg',
     {
-      class: 'c4__svg',
+      // When there's a winning line, dim the non-winning discs so it pops.
+      class: `c4__svg${state.line ? ' c4__svg--won' : ''}`,
       viewBox: `0 0 ${W} ${H}`,
       role: 'group',
       'aria-label': 'Connect 4 board',
