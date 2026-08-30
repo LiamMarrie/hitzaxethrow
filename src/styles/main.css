@@ -123,36 +123,107 @@ body {
 }
 
 /* ---- Menu (game selection) ---- */
+.menu-screen {
+  max-width: 960px;
+  margin: 0 auto;
+  padding-bottom: 120px; /* clear the fixed footer so the last row is tappable */
+}
+.menu__heading {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin: 24px 4px 20px;
+  color: var(--text);
+}
 .menu {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 20px;
-  max-width: 900px;
-  margin: 40px auto;
 }
 .menu__card {
-  min-height: 180px;
+  position: relative;
+  min-height: 200px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  font-size: 1.4rem;
+  align-items: flex-start;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 24px 22px 22px;
+  text-align: left;
+  color: var(--text);
   background: var(--surface);
-  border: 1px solid var(--line);
+  border: 2px solid var(--line);
   border-radius: var(--radius);
   cursor: pointer;
+  overflow: hidden;
+  transition:
+    transform 0.08s ease,
+    border-color 0.12s ease,
+    background 0.12s ease;
+}
+/* Accent bar along the top edge; colour distinguishes throw vs grid games. */
+.menu__card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: var(--accent);
+}
+.menu__card[data-kind='grid']::before {
+  background: var(--accent-2);
+}
+.menu__icon {
+  width: 56px;
+  height: 56px;
+  margin-bottom: auto;
+  color: var(--accent);
+}
+.menu__card[data-kind='grid'] .menu__icon {
+  color: var(--accent-2);
+}
+.menu__icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.menu__name {
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.menu__tagline {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--text-dim);
+  line-height: 1.3;
+}
+/* Hover (dev/desktop) and press (kiosk) feedback. */
+.menu__card:hover {
+  background: var(--surface-2);
+  border-color: var(--accent);
+}
+.menu__card[data-kind='grid']:hover {
+  border-color: var(--accent-2);
 }
 .menu__card:active {
+  transform: scale(0.97);
   border-color: var(--accent);
+}
+.menu__card:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
 }
 .menu__footer {
   position: fixed;
   left: 0;
+  right: 0;
   bottom: 0;
   display: flex;
   justify-content: flex-start;
-  padding: 24px;
+  padding: 20px 24px;
+  background: linear-gradient(to top, var(--bg) 60%, transparent);
 }
 .menu__edit-players {
   font-size: 1.1rem;
