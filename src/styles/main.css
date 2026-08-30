@@ -603,11 +603,17 @@ body {
   }
 }
 
-/* ---- Interactive Tic-Tac-Toe board ----
-   Same projector-first approach as the target: a big high-contrast SVG with a
-   heavy white grid and thick X / O marks in the two accent colours, so each
-   mark reads clearly on the projected feed. */
+/* ---- Interactive Tic-Tac-Axe board ----
+   Ports the Tic-Tac-Axe prototype look: a 3x3 grid of dark rounded cells with
+   glowing white borders, big red X / blue O glyph marks with a neon glow, a
+   faint hover preview, and a pulsing winning line. A CSS grid of tappable
+   cells (not an SVG), so the borders/shadows/glow match the prototype exactly. */
 .ttt {
+  /* Mark palette from the prototype: red X, blue O, near-black cell field. */
+  --ttt-x: #ff4b4b;
+  --ttt-o: #4d9bff;
+  --ttt-cell: #0a0a0b;
+  --ttt-empty: #f4f4f2;
   flex: 1 1 auto;
   min-height: 0;
   display: flex;
@@ -644,10 +650,10 @@ body {
   color: #0f1115;
 }
 .ttt__badge--x {
-  background: var(--accent);
+  background: var(--ttt-x);
 }
 .ttt__badge--o {
-  background: var(--accent-2);
+  background: var(--ttt-o);
 }
 .ttt__status-done {
   font-size: 1.9rem;
@@ -656,10 +662,10 @@ body {
   color: var(--text);
 }
 .ttt__status-done--x {
-  color: var(--accent);
+  color: var(--ttt-x);
 }
 .ttt__status-done--o {
-  color: var(--accent-2);
+  color: var(--ttt-o);
 }
 .ttt__status--done .ttt__status-done {
   animation: ttt-pop 0.32s cubic-bezier(0.2, 1.4, 0.4, 1) both;
@@ -674,43 +680,113 @@ body {
   align-items: center;
   justify-content: center;
 }
-.ttt__svg {
+
+/* 3x3 grid, sized by the available height and kept square (like the old SVG). */
+.ttt__grid {
   height: 100%;
   max-height: 100%;
-  width: auto;
   max-width: 100%;
   aspect-ratio: 1 / 1;
-  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.5));
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: clamp(12px, 2.6vw, 20px);
 }
 
-/* Cells: the whole square is the tap target. */
+/* Cells: dark rounded field with a glowing white border, ported from the
+   prototype. The whole cell is the tap target. */
 .ttt__cell {
+  all: unset;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+  background: radial-gradient(120% 120% at 50% 40%, #101013, var(--ttt-cell));
+  border: 2.5px solid var(--ttt-empty);
+  box-shadow:
+    0 0 12px rgba(244, 244, 242, 0.16),
+    inset 0 0 20px rgba(0, 0, 0, 0.6);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
   cursor: pointer;
+}
+.ttt__cell:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+/* Hover brightens an empty, still-playable cell. */
+.ttt__cell:not(.ttt__cell--x):not(.ttt__cell--o):not(.ttt__cell--locked):hover {
+  border-color: #ffffff;
+  box-shadow:
+    0 0 18px rgba(255, 255, 255, 0.3),
+    inset 0 0 20px rgba(0, 0, 0, 0.6);
 }
 .ttt__cell--locked {
   cursor: default;
 }
-/* Press feedback: dim the cell's hit-rect area briefly on tap. */
-.ttt__cell:not(.ttt__cell--locked):active .ttt__hit {
-  fill: rgba(255, 255, 255, 0.08);
+
+/* Played cells: red X / blue O border + glow. */
+.ttt__cell--x {
+  border-color: var(--ttt-x);
+  box-shadow:
+    0 0 20px rgba(255, 75, 75, 0.55),
+    inset 0 0 22px rgba(255, 75, 75, 0.12);
+}
+.ttt__cell--o {
+  border-color: var(--ttt-o);
+  box-shadow:
+    0 0 20px rgba(77, 155, 255, 0.55),
+    inset 0 0 22px rgba(77, 155, 255, 0.12);
 }
 
-/* Marks animate in when played so a fresh mark is obvious on the feed. */
-.ttt__mark--x {
-  animation: ttt-draw 0.18s ease both;
+/* The glyph mark. Huge for projector legibility, with a neon glow. */
+.ttt__mark {
+  font-weight: 800;
+  line-height: 1;
+  font-size: clamp(40px, 13vmin, 120px);
+  user-select: none;
 }
-.ttt__mark--o {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: ttt-pop 0.22s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+.ttt__cell--x .ttt__mark {
+  color: var(--ttt-x);
+  text-shadow:
+    0 0 20px rgba(255, 75, 75, 0.85),
+    0 0 6px rgba(255, 75, 75, 0.9);
+}
+.ttt__cell--o .ttt__mark {
+  color: var(--ttt-o);
+  text-shadow:
+    0 0 20px rgba(77, 155, 255, 0.85),
+    0 0 6px rgba(77, 155, 255, 0.9);
 }
 
-/* Winning line: a bright glowing bar over the three cells. */
-.ttt__win {
-  stroke: #ffffff;
-  stroke-width: 14;
-  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9));
-  animation: ttt-strike 0.28s ease both;
+/* Hover preview of the mark you'd place. */
+.ttt__cell--preview .ttt__mark {
+  opacity: 0.3;
+}
+.ttt__cell--pv-x .ttt__mark {
+  color: var(--ttt-x);
+  text-shadow: 0 0 14px rgba(255, 75, 75, 0.5);
+}
+.ttt__cell--pv-o .ttt__mark {
+  color: var(--ttt-o);
+  text-shadow: 0 0 14px rgba(77, 155, 255, 0.5);
+}
+
+/* Winning cells pulse with a stronger glow. */
+.ttt__cell--win {
+  animation: ttt-winpulse 1s ease infinite alternate;
+}
+.ttt__cell--x.ttt__cell--win {
+  box-shadow:
+    0 0 28px rgba(255, 75, 75, 0.9),
+    inset 0 0 26px rgba(255, 75, 75, 0.22);
+}
+.ttt__cell--o.ttt__cell--win {
+  box-shadow:
+    0 0 28px rgba(77, 155, 255, 0.9),
+    inset 0 0 26px rgba(77, 155, 255, 0.22);
 }
 
 /* Rematch control row. Reserve the row when empty so the board doesn't jump. */
@@ -739,28 +815,19 @@ body {
     opacity: 1;
   }
 }
-@keyframes ttt-draw {
+@keyframes ttt-winpulse {
   from {
-    opacity: 0;
+    filter: brightness(1);
   }
   to {
-    opacity: 1;
-  }
-}
-@keyframes ttt-strike {
-  from {
-    opacity: 0;
-    stroke-width: 4;
-  }
-  to {
-    opacity: 1;
-    stroke-width: 14;
+    filter: brightness(1.4);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .ttt__mark--x,
-  .ttt__mark--o,
-  .ttt__win,
+  .ttt__cell {
+    transition: none;
+  }
+  .ttt__cell--win,
   .ttt__status--done .ttt__status-done {
     animation: none;
   }
