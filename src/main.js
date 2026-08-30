@@ -25,6 +25,7 @@ import {
   __keys__,
 } from './lib/session.js';
 import { containsBlockedWord } from './lib/profanity.js';
+import { shuffleTurnOrder } from './lib/turn-order.js';
 import { GAMES, getGame } from './games/index.js';
 import { renderMenu, renderPlayers, mount } from './ui/render.js';
 import {
@@ -243,11 +244,15 @@ function recordMove(cell) {
 /** Start a fresh round of the active grid game (rematch), keeping players. */
 function resetGame() {
   const game = getGame(session.game);
-  const reset = game?.module.reset;
-  if (!reset) return;
+  // `reset` marks a game as replayable (grid games / Pairs). Rather than reuse
+  // the previous order via reset(state), rebuild fresh state from a newly
+  // shuffled roster so the replay button also re-randomizes who goes first.
+  if (!game?.module.reset) return;
   guard(
     () => {
-      session.state = reset(session.state);
+      session.state = game.module.createState(
+        shuffleTurnOrder(session.players, game.module.SEATS)
+      );
       saveSession(session);
       render();
     },
@@ -332,7 +337,13 @@ function selectGame(key) {
   guard(
     () => {
       session.game = key;
-      session.state = game.module.createState(session.players);
+      // Randomize turn order per game so it isn't always the first-entered
+      // player who starts (see lib/turn-order.js). Two-player games declare
+      // SEATS so only the first two players are seated — the shuffle just swaps
+      // who goes first between them. The roster itself is left untouched.
+      session.state = game.module.createState(
+        shuffleTurnOrder(session.players, game.module.SEATS)
+      );
       saveSession(session);
       render();
     },

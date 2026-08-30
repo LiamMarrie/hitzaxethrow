@@ -28,6 +28,15 @@ export const GAME_NAME = 'Tic-Tac-Toe';
 export const CELLS = 9;
 
 /**
+ * How many players are seated. Tic-Tac-Toe is strictly two-player (X and O), so
+ * only the first two session players ever play — see createState's slice(0, 2).
+ * The router reads this to randomize turn order WITHIN the seated players
+ * (swapping who is X) without changing which two players are seated.
+ * @type {number}
+ */
+export const SEATS = 2;
+
+/**
  * The eight winning lines as cell-index triples (three rows, three columns,
  * two diagonals).
  * @type {ReadonlyArray<[number,number,number]>}

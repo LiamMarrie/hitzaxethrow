@@ -36,6 +36,15 @@ export const ROWS = 6;
 export const CONNECT = 4;
 
 /**
+ * How many players are seated. Connect 4 is strictly two-player, so only the
+ * first two session players ever play — see createState's slice(0, 2). The
+ * router reads this to randomize turn order WITHIN the seated players (swapping
+ * who drops first) without changing which two players are seated.
+ * @type {number}
+ */
+export const SEATS = 2;
+
+/**
  * @typedef {{id:string,name:string}} Player
  * @typedef {Object} GameState
  * @property {Player[]} players
