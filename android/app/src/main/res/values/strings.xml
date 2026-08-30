@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Axe Throw Scoreboard</string>
+    <string name="title_activity_main">Axe Throw Scoreboard</string>
+    <string name="package_name">com.hitz.axethrow</string>
+    <string name="custom_url_scheme">com.hitz.axethrow</string>
+</resources>

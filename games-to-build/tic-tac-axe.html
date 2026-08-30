@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tic-Tac-Axe</title>
+<style>
+  :root{
+    --bg-0:#04050a;
+    --bg-1:#0b0e14;
+    --cell:#0a0a0b;
+    --empty:#f4f4f2;   /* white empty borders */
+    --red:#ff4b4b;
+    --blue:#4d9bff;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:
+      radial-gradient(140% 120% at 8% 4%,  rgba(182,117,43,.20), transparent 34%),
+      radial-gradient(140% 120% at 92% 4%, rgba(182,117,43,.20), transparent 34%),
+      radial-gradient(120% 120% at 50% 40%, var(--bg-1), var(--bg-0) 72%);
+    min-height:100%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:18px;padding:24px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+
+  #board{
+    width:min(92vw,86vh);
+    display:grid;grid-template-columns:repeat(3,1fr);
+    gap:clamp(12px,2.6vw,20px);
+  }
+
+  .cell{
+    all:unset;
+    aspect-ratio:1/1;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:18px;
+    background:radial-gradient(120% 120% at 50% 40%, #101013, var(--cell));
+    border:2.5px solid var(--empty);
+    box-shadow:0 0 12px rgba(244,244,242,.16), inset 0 0 20px rgba(0,0,0,.6);
+    transition:border-color .15s ease, box-shadow .15s ease;
+    cursor:pointer;
+  }
+  .cell:focus-visible{outline:2px solid #fff;outline-offset:3px}
+
+  .cell:not(.x):not(.o):hover{
+    border-color:#ffffff;
+    box-shadow:0 0 18px rgba(255,255,255,.3), inset 0 0 20px rgba(0,0,0,.6);
+  }
+  .cell.x,.cell.o{cursor:default}
+
+  .cell.x{
+    border-color:var(--red);
+    box-shadow:0 0 20px rgba(255,75,75,.55), inset 0 0 22px rgba(255,75,75,.12);
+  }
+  .cell.o{
+    border-color:var(--blue);
+    box-shadow:0 0 20px rgba(77,155,255,.55), inset 0 0 22px rgba(77,155,255,.12);
+  }
+
+  .mark{
+    font-weight:800;line-height:1;
+    font-size:clamp(40px,13vmin,120px);
+    user-select:none;
+  }
+  .cell.x .mark{color:var(--red);  text-shadow:0 0 20px rgba(255,75,75,.85), 0 0 6px rgba(255,75,75,.9)}
+  .cell.o .mark{color:var(--blue); text-shadow:0 0 20px rgba(77,155,255,.85), 0 0 6px rgba(77,155,255,.9)}
+
+  /* hover preview of the mark you'd place */
+  .cell.preview .mark{opacity:.30}
+  .cell.pv-x .mark{color:var(--red);  text-shadow:0 0 14px rgba(255,75,75,.5)}
+  .cell.pv-o .mark{color:var(--blue); text-shadow:0 0 14px rgba(77,155,255,.5)}
+
+  /* winning line */
+  .cell.win{animation:winpulse 1s ease infinite alternate}
+  .cell.x.win{box-shadow:0 0 28px rgba(255,75,75,.9),  inset 0 0 26px rgba(255,75,75,.22)}
+  .cell.o.win{box-shadow:0 0 28px rgba(77,155,255,.9), inset 0 0 26px rgba(77,155,255,.22)}
+  @keyframes winpulse{from{filter:brightness(1)}to{filter:brightness(1.4)}}
+
+  /* Optional dev readout — delete this rule and the <div id="status"> to remove */
+  #status{font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#9aa3ad}
+  #status b{color:#f4f2ea;font-weight:600}
+
+  @media (prefers-reduced-motion:reduce){
+    .cell{transition:none}
+    .cell.win{animation:none}
+  }
+</style>
+</head>
+<body>
+  <div id="board" role="grid" aria-label="Tic-tac-toe board"></div>
+  <div id="status"></div>
+
+<script>
+(() => {
+  const board  = document.getElementById('board');
+  const status = document.getElementById('status');
+  const LINES = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+  // build cells
+  const cells = [];
+  for (let i = 0; i < 9; i++) {
+    const c = document.createElement('button');
+    c.className = 'cell';
+    c.setAttribute('role', 'gridcell');
+    c.setAttribute('aria-label', 'Empty');
+    c.innerHTML = '<span class="mark"></span>';
+    c.addEventListener('click', () => place(i));
+    c.addEventListener('mouseenter', () => preview(i, true));
+    c.addEventListener('mouseleave', () => preview(i, false));
+    board.appendChild(c);
+    cells.push(c);
+  }
+
+  let grid, current, over, moves, first;
+  const markEl = i => cells[i].querySelector('.mark');
+  const emit = (name, detail) => board.dispatchEvent(new CustomEvent(name, {bubbles:true, detail}));
+
+  function init(startWith){
+    first   = (startWith === 'O') ? 'O' : 'X';
+    grid    = Array(9).fill('');
+    current = first;
+    over    = false;
+    moves   = [];
+    cells.forEach((c, i) => { c.className = 'cell'; markEl(i).textContent = ''; c.setAttribute('aria-label','Empty'); });
+    board.dataset.turn = current.toLowerCase();
+    if (status) status.innerHTML = `<b>${current}</b> to move`;
+    emit('turnchange', {player: current});
+  }
+
+  function preview(i, on){
+    if (over || grid[i]) return;
+    const c = cells[i];
+    if (on){ markEl(i).textContent = current; c.classList.add('preview', 'pv-' + current.toLowerCase()); }
+    else   { markEl(i).textContent = '';      c.classList.remove('preview', 'pv-x', 'pv-o'); }
+  }
+
+  const winnerLine = () => LINES.find(([a,b,c]) => grid[a] && grid[a] === grid[b] && grid[a] === grid[c]) || null;
+
+  function place(i){
+    if (over || grid[i]) return;
+    grid[i] = current;
+    const c = cells[i];
+    c.classList.remove('preview', 'pv-x', 'pv-o');
+    c.classList.add(current.toLowerCase());
+    markEl(i).textContent = current;
+    c.setAttribute('aria-label', current);
+    moves.push(i);
+    emit('move', {index:i, player:current, board:[...grid]});
+
+    const L = winnerLine();
+    if (L){
+      over = true;
+      L.forEach(k => cells[k].classList.add('win'));
+      if (status) status.innerHTML = `<b>${current}</b> wins`;
+      emit('gamewon', {player:current, line:L});
+      return;
+    }
+    if (grid.every(Boolean)){
+      over = true;
+      if (status) status.innerHTML = 'Draw';
+      emit('draw', {});
+      return;
+    }
+    current = current === 'X' ? 'O' : 'X';
+    board.dataset.turn = current.toLowerCase();
+    if (status) status.innerHTML = `<b>${current}</b> to move`;
+    emit('turnchange', {player:current});
+  }
+
+  function undo(){
+    const i = moves.pop();
+    if (i === undefined) return null;
+    const player = grid[i];
+    grid[i] = '';
+    cells[i].className = 'cell';
+    markEl(i).textContent = '';
+    cells[i].setAttribute('aria-label', 'Empty');
+    cells.forEach(c => c.classList.remove('win'));
+    over = false;
+    current = player;                       // the player who made that move goes again
+    board.dataset.turn = current.toLowerCase();
+    if (status) status.innerHTML = `<b>${current}</b> to move`;
+    emit('moveundone', {index:i, player});
+    emit('turnchange', {player:current});
+    return {index:i, player};
+  }
+
+  // reset() starts a fresh game; pass 'X' or 'O' to choose who goes first
+  window.ticTacToe = {
+    reset: startWith => init(startWith),
+    undo,
+    getBoard: () => [...grid],
+    getCurrent: () => current,
+    isOver: () => over,
+  };
+
+  init('X');
+})();
+</script>
+</body>
+</html>

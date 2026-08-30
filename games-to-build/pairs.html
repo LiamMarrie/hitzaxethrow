@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pairs</title>
+<style>
+  :root{
+    --bg-0:#04050a;
+    --bg-1:#0b0e14;
+    --purple:#8b7cf0;
+    --white:#f4f2ea;
+    --red:#c62f28;
+    --black:#1b1b1b;
+    --match:#3ac07a;
+    --gold:#d9a441;
+    --radius:16px;
+    --flip:.5s;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:
+      radial-gradient(140% 120% at 8% 4%,  rgba(182,117,43,.20), transparent 34%),
+      radial-gradient(140% 120% at 92% 4%, rgba(182,117,43,.20), transparent 34%),
+      radial-gradient(120% 120% at 50% 40%, var(--bg-1), var(--bg-0) 72%);
+    min-height:100%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:20px;padding:24px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+
+  #board{
+    width:min(92vw,86vh);
+    display:grid;grid-template-columns:repeat(3,1fr);
+    gap:clamp(10px,2.4vw,22px);
+  }
+
+  /* card = the sized box (grid item). Height comes from aspect-ratio. */
+  .card{
+    appearance:none;-webkit-appearance:none;
+    background:transparent;border:0;margin:0;padding:0;font:inherit;color:inherit;
+    display:block;
+    position:relative;
+    aspect-ratio:1/1.05;
+    perspective:1100px;
+    cursor:pointer;
+    border-radius:var(--radius);
+  }
+  .card:focus-visible .flipper{outline:2px solid var(--purple);outline-offset:3px;border-radius:var(--radius)}
+
+  /* flipper fills the card via absolute inset (resolves against the used size) */
+  .flipper{
+    position:absolute;inset:0;
+    transform-style:preserve-3d;
+    transition:transform var(--flip) cubic-bezier(.2,.7,.2,1.2);
+  }
+  .card.flipped .flipper{transform:rotateY(180deg)}
+
+  .face{
+    position:absolute;inset:0;
+    backface-visibility:hidden;-webkit-backface-visibility:hidden;
+    border-radius:var(--radius);
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;
+  }
+
+  /* face-down cover with the "?" */
+  .face--cover{
+    background:
+      radial-gradient(60% 60% at 50% 45%, rgba(139,124,240,.16), transparent 70%),
+      #090a0d;
+    border:1.5px solid rgba(228,234,255,.5);
+    box-shadow:inset 0 0 30px rgba(0,0,0,.6);
+  }
+  .qmark{
+    font-size:min(15vw,64px);font-weight:800;color:var(--purple);
+    text-shadow:0 0 18px rgba(139,124,240,.65),0 0 4px rgba(139,124,240,.9);
+  }
+
+  /* revealed face */
+  .face--reveal{
+    transform:rotateY(180deg);
+    background:linear-gradient(160deg,#fbfaf5,#eae6da);
+    border:1.5px solid rgba(255,255,255,.7);
+    box-shadow:inset 0 0 24px rgba(0,0,0,.08);
+  }
+  .reveal{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2%;line-height:1}
+  .reveal .rank{font-size:min(17vw,74px);font-weight:800}
+  .reveal .suit{font-size:min(9vw,38px)}
+  .is-red{color:var(--red)}
+  .is-black{color:var(--black)}
+
+  .face--reveal.joker{
+    background:
+      radial-gradient(70% 70% at 50% 45%, rgba(139,124,240,.16), transparent 72%),
+      linear-gradient(160deg,#fbfaf5,#e9e5d8);
+  }
+  .j-top,.j-bot{font-size:min(4.4vw,17px);font-weight:800;letter-spacing:.22em;color:#6b5bd6}
+  .j-star{font-size:min(16vw,66px);line-height:1;color:var(--gold);filter:drop-shadow(0 0 10px rgba(217,164,65,.55))}
+
+  /* matched / leftover */
+  .card.matched .flipper{transform:rotateY(180deg) scale(.97)}
+  .card.matched .face--reveal{box-shadow:0 0 0 2px var(--match),0 0 26px rgba(58,192,122,.5)}
+  .card.matched{cursor:default}
+  .card.leftover .face--reveal{box-shadow:0 0 0 2px rgba(139,124,240,.8),0 0 24px rgba(139,124,240,.4)}
+
+  /* entrance on the card itself so it never touches the flip transform */
+  .card.enter{animation:pop .4s ease backwards}
+  @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.94)}to{opacity:1}}
+
+  /* Optional dev readout — delete this rule and the <div id="status"> to remove */
+  #status{font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#9aa3ad}
+  #status b{color:var(--white);font-weight:600}
+
+  @media (prefers-reduced-motion:reduce){
+    .flipper{transition:none}
+    .card.enter{animation:none}
+  }
+</style>
+</head>
+<body>
+  <div id="board" role="grid" aria-label="Pairs game board"></div>
+  <div id="status">Pairs <b>0</b> / 4</div>
+
+<script>
+(() => {
+  const board  = document.getElementById('board');
+  const status = document.getElementById('status');
+
+  // 4 distinct cards (each appears twice) + one Joker wild = 9 cards
+  const PAIRS = [
+    {id:'JD', rank:'J', suit:'\u2666', red:true },
+    {id:'KC', rank:'K', suit:'\u2663', red:false},
+    {id:'QH', rank:'Q', suit:'\u2665', red:true },
+    {id:'AS', rank:'A', suit:'\u2660', red:false},
+  ];
+  const TOTAL_PAIRS = PAIRS.length; // 4
+
+  const shuffle = a => {
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+
+  const revealHTML = c => c.joker
+    ? '<span class="j-top">Joker</span><span class="j-star">\u2605</span><span class="j-bot">Wild</span>'
+    : '<span class="reveal ' + (c.red ? 'is-red' : 'is-black') + '">' +
+        '<span class="rank">' + c.rank + '</span><span class="suit">' + c.suit + '</span>' +
+      '</span>';
+
+  const suitName = s => ({'\u2666':'diamonds','\u2665':'hearts','\u2663':'clubs','\u2660':'spades'}[s] || '');
+  const cardName = c => c.joker ? 'Joker (wild)' : c.rank + ' of ' + suitName(c.suit);
+
+  let deck, flipped, busy, matched;
+
+  function deal() {
+    deck = shuffle([
+      ...PAIRS.flatMap(c => [{...c}, {...c}]),
+      {id:'JOKER', joker:true},
+    ]);
+    flipped = [];
+    busy = false;
+    matched = 0;
+
+    board.innerHTML = '';
+    deck.forEach((c, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'card enter';
+      btn.setAttribute('role', 'gridcell');
+      btn.setAttribute('aria-label', 'Face-down card');
+      btn.style.animationDelay = (i * 45) + 'ms';
+      btn.innerHTML =
+        '<span class="flipper">' +
+          '<span class="face face--cover"><span class="qmark">?</span></span>' +
+          '<span class="face face--reveal ' + (c.joker ? 'joker' : '') + '">' + revealHTML(c) + '</span>' +
+        '</span>';
+      btn.addEventListener('click', () => onPick(i, btn));
+      board.appendChild(btn);
+    });
+    if (status) status.innerHTML = 'Pairs <b>0</b> / ' + TOTAL_PAIRS;
+  }
+
+  const isMatch = (a, b) => a.joker || b.joker || a.id === b.id;
+
+  function onPick(i, btn) {
+    if (busy) return;
+    if (btn.classList.contains('flipped') || btn.classList.contains('matched')) return;
+
+    btn.classList.add('flipped');
+    btn.setAttribute('aria-label', cardName(deck[i]));
+    flipped.push(i);
+    board.dispatchEvent(new CustomEvent('cardflip',
+      {bubbles:true, detail:{index:i, card:deck[i]}}));
+
+    if (flipped.length < 2) return;
+
+    busy = true;
+    const [a, b] = flipped;
+    const cards = [board.children[a], board.children[b]];
+
+    if (isMatch(deck[a], deck[b])) {
+      const joker = !!(deck[a].joker || deck[b].joker);
+      setTimeout(() => {
+        cards.forEach(el => el.classList.add('matched'));
+        matched++;
+        flipped = [];
+        busy = false;
+        if (status) status.innerHTML = 'Pairs <b>' + matched + '</b> / ' + TOTAL_PAIRS;
+        board.dispatchEvent(new CustomEvent('pairmatched',
+          {bubbles:true, detail:{indices:[a,b], cards:[deck[a],deck[b]], joker, matched, total:TOTAL_PAIRS}}));
+        if (matched === TOTAL_PAIRS) win();
+      }, 260);
+    } else {
+      setTimeout(() => {
+        cards.forEach(el => {
+          el.classList.remove('flipped');
+          el.setAttribute('aria-label', 'Face-down card');
+        });
+        flipped = [];
+        busy = false;
+      }, 850);
+    }
+  }
+
+  function win() {
+    [...board.children].forEach((el, i) => {
+      if (!el.classList.contains('matched')) {
+        el.classList.add('flipped', 'leftover');
+        el.setAttribute('aria-label', cardName(deck[i]) + ' (leftover)');
+      }
+    });
+    board.dispatchEvent(new CustomEvent('gamewon', {bubbles:true, detail:{pairs:TOTAL_PAIRS}}));
+  }
+
+  window.pairsGame = { reset: deal };
+  deal();
+})();
+</script>
+</body>
+</html>

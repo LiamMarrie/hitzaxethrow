@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WATL Target</title>
+<style>
+  :root{
+    --bg-0:#04050a;
+    --bg-1:#0b0e14;
+    --line:#f4f4f2;
+    --disc:#0a0a0b;
+    --disc-hover:#17171a;
+    --red:#d63a2f;
+    --blue:#2f6fd6;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0}
+  body{
+    background:
+      radial-gradient(140% 120% at 8% 4%,  rgba(182,117,43,.20), transparent 34%),
+      radial-gradient(140% 120% at 92% 4%, rgba(182,117,43,.20), transparent 34%),
+      radial-gradient(120% 120% at 50% 40%, var(--bg-1), var(--bg-0) 72%);
+    min-height:100%;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:16px;padding:24px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+
+  #stage{width:min(92vw,86vh);aspect-ratio:1/1;position:relative;
+         filter:drop-shadow(0 24px 60px rgba(0,0,0,.55))}
+  svg{width:100%;height:100%;display:block;touch-action:manipulation}
+
+  .hitzone{cursor:crosshair;transition:fill .1s ease}
+  .disc{fill:var(--disc)}
+  .disc:hover{fill:var(--disc-hover)}
+  .miss{fill:transparent}
+  .line{fill:none;stroke:var(--line);stroke-width:6;pointer-events:none}
+
+  .spot{stroke:#f4f4f2;cursor:crosshair;transition:fill .1s ease,filter .1s ease}
+  .cluster{fill:var(--red);stroke-width:3}
+  .cluster:hover{fill:#e85647}
+  .killshot{fill:var(--blue);stroke-width:3;filter:drop-shadow(0 0 9px rgba(47,111,214,.6))}
+  .killshot:hover{fill:#4b86ef;filter:drop-shadow(0 0 15px rgba(47,111,214,.85))}
+  .ks-off{display:none}
+
+  #markers,#floats{pointer-events:none}
+  .mark-ring{fill:rgba(0,0,0,.5);stroke:#fff;stroke-width:2.5}
+  .pts{font-weight:800;font-size:52px;text-anchor:middle;dominant-baseline:central;
+       transform-box:fill-box;transform-origin:center;animation:rise .9s ease forwards;
+       paint-order:stroke;stroke:rgba(0,0,0,.55);stroke-width:4px}
+  @keyframes rise{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-46px)}}
+
+  /* Optional dev readout — delete this rule and the <div id="last"> to remove */
+  #last{font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:#9aa3ad}
+  #last b{color:#f4f2ea;font-weight:600}
+
+  @media (prefers-reduced-motion:reduce){
+    .pts{animation:none;opacity:0}
+    .hitzone,.spot{transition:none}
+  }
+</style>
+</head>
+<body>
+  <div id="stage">
+    <svg viewBox="0 0 1000 1000" role="img" aria-label="WATL axe throwing target. Tap where the axe landed.">
+      <!-- miss / drop zone -->
+      <rect class="hitzone miss" x="0" y="0" width="1000" height="1000"
+            data-zone="miss" data-points="0" style="pointer-events:all"/>
+
+      <!-- 5 scoring discs (largest at back so every ring taps correctly) -->
+      <circle class="hitzone disc" cx="500" cy="500" r="340" data-zone="ring1" data-points="1"/>
+      <circle class="hitzone disc" cx="500" cy="500" r="284" data-zone="ring2" data-points="2"/>
+      <circle class="hitzone disc" cx="500" cy="500" r="228" data-zone="ring3" data-points="3"/>
+      <circle class="hitzone disc" cx="500" cy="500" r="172" data-zone="ring4" data-points="4"/>
+      <circle class="hitzone disc" cx="500" cy="500" r="116" data-zone="ring5" data-points="5"/>
+
+      <!-- white ring lines (visual only) -->
+      <circle class="line" cx="500" cy="500" r="340"/>
+      <circle class="line" cx="500" cy="500" r="284"/>
+      <circle class="line" cx="500" cy="500" r="228"/>
+      <circle class="line" cx="500" cy="500" r="172"/>
+      <circle class="line" cx="500" cy="500" r="116"/>
+
+      <!-- bullseye cluster (6): centre + four dots -->
+      <circle class="spot cluster" cx="500" cy="500" r="14" data-zone="cluster" data-points="6"/>
+      <circle class="spot cluster" cx="382" cy="410" r="12" data-zone="cluster" data-points="6"/>
+      <circle class="spot cluster" cx="618" cy="410" r="12" data-zone="cluster" data-points="6"/>
+      <circle class="spot cluster" cx="382" cy="590" r="12" data-zone="cluster" data-points="6"/>
+      <circle class="spot cluster" cx="618" cy="590" r="12" data-zone="cluster" data-points="6"/>
+
+      <!-- killshot dots (8) -->
+      <circle class="spot killshot" cx="311" cy="256" r="16" data-zone="killshot" data-points="8"/>
+      <circle class="spot killshot" cx="689" cy="256" r="16" data-zone="killshot" data-points="8"/>
+      <circle class="spot killshot" cx="311" cy="744" r="16" data-zone="killshot" data-points="8"/>
+      <circle class="spot killshot" cx="689" cy="744" r="16" data-zone="killshot" data-points="8"/>
+
+      <g id="markers"></g>
+      <g id="floats"></g>
+    </svg>
+  </div>
+  <div id="last">Tap the target</div>
+
+<script>
+(() => {
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const svg     = document.querySelector('svg');
+  const markers = document.getElementById('markers');
+  const floats  = document.getElementById('floats');
+  const last    = document.getElementById('last');
+
+  const ZONE = {
+    killshot:{label:'Killshot', color:'#3f7fe0'},
+    cluster: {label:'Bullseye', color:'#e8b23a'},
+    ring5:   {label:'5-ring',   color:'#dfe3e8'},
+    ring4:   {label:'4-ring',   color:'#b9bec6'},
+    ring3:   {label:'3-ring',   color:'#969ba4'},
+    ring2:   {label:'2-ring',   color:'#767b83'},
+    ring1:   {label:'1-ring',   color:'#585c63'},
+    miss:    {label:'Drop',     color:'#c0392b'},
+  };
+
+  let killshotEnabled = true;
+  const throws = [];   // {zone, points, x, y, markerEl}
+
+  function toSvg(e, fallbackEl){
+    const rect = svg.getBoundingClientRect();
+    const vb = svg.viewBox.baseVal;
+    if(!rect.width || !rect.height){
+      return fallbackEl && fallbackEl.hasAttribute('cx')
+        ? [ +fallbackEl.getAttribute('cx'), +fallbackEl.getAttribute('cy') ]
+        : [500, 500];
+    }
+    return [
+      vb.x + (e.clientX - rect.left) * (vb.width  / rect.width),
+      vb.y + (e.clientY - rect.top ) * (vb.height / rect.height),
+    ];
+  }
+
+  const el = (tag, attrs) => {
+    const n = document.createElementNS(SVGNS, tag);
+    for (const k in attrs) n.setAttribute(k, attrs[k]);
+    return n;
+  };
+
+  function addMarker(x, y, zone){
+    const g = el('g', {transform:`translate(${x} ${y})`});
+    g.appendChild(el('circle', {class:'mark-ring', r:15}));
+    g.appendChild(el('circle', {r:5.5, fill:ZONE[zone].color}));
+    markers.appendChild(g);
+    return g;
+  }
+
+  function floatPoints(x, y, points, zone){
+    const t = el('text', {x, y:y-4, class:'pts', fill:ZONE[zone].color});
+    t.textContent = (points > 0 ? '+' : '') + points;
+    floats.appendChild(t);
+    t.addEventListener('animationend', () => t.remove());
+  }
+
+  function register(zone, points, x, y){
+    const markerEl = addMarker(x, y, zone);
+    floatPoints(x, y, points, zone);
+    throws.push({zone, points, x, y, markerEl});
+    if (last) last.innerHTML = `Last <b>${ZONE[zone].label} · ${points}</b>`;
+    svg.dispatchEvent(new CustomEvent('axethrow', {bubbles:true, detail:{zone, points, x, y}}));
+  }
+
+  svg.addEventListener('click', e => {
+    const zoneEl = e.target.closest('[data-points]');
+    if (!zoneEl) return;
+    const zone = zoneEl.dataset.zone;
+    const points = +zoneEl.dataset.points;
+    const [x, y] = toSvg(e, zoneEl);
+    register(zone, points, x, y);
+  });
+
+  // ---- API for the surrounding app (no score buttons on the board itself) ----
+  function undo(){
+    const t = throws.pop();
+    if (!t) return null;
+    t.markerEl.remove();
+    svg.dispatchEvent(new CustomEvent('throwremoved', {bubbles:true, detail:{zone:t.zone, points:t.points}}));
+    return t;
+  }
+  function reset(){
+    throws.length = 0;
+    markers.replaceChildren();
+    floats.replaceChildren();
+    if (last) last.innerHTML = 'Tap the target';
+    svg.dispatchEvent(new CustomEvent('targetreset', {bubbles:true}));
+  }
+  // when killshots are off, the dots hide and a tap there scores the 1-ring beneath
+  function setKillshot(on){
+    killshotEnabled = !!on;
+    svg.querySelectorAll('.killshot').forEach(d => d.classList.toggle('ks-off', !killshotEnabled));
+  }
+
+  window.watlTarget = { undo, reset, setKillshot, getThrows: () => throws.map(({markerEl, ...t}) => t) };
+})();
+</script>
+</body>
+</html>

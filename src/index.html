@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Axe Throw Scoreboard</title>
+    <link rel="stylesheet" href="./styles/main.css" />
+  </head>
+  <body>
+    <!-- Loading overlay: shown immediately on page load (before the module
+         script runs) so the app never flashes an unstyled/half-built screen
+         during initialization. main.js hides it once boot completes. -->
+    <div id="loading" class="loading" role="status" aria-live="polite">
+      <div class="loading__spinner" aria-hidden="true"></div>
+      <p class="loading__text">Loading…</p>
+    </div>
+
+    <div id="app" class="app">
+      <header class="app__header">
+        <h1 class="app__title">Axe Throw Scoreboard</h1>
+        <div class="app__header-right">
+          <span
+            id="session-badge"
+            class="app__session"
+            aria-live="polite"
+          ></span>
+          <button
+            id="end-session"
+            class="btn btn--ghost btn--sm app__end-session"
+            type="button"
+          >
+            End session
+          </button>
+        </div>
+      </header>
+
+      <main id="screen" class="screen" aria-live="polite">
+        <!-- Screens are rendered here by the router. -->
+      </main>
+
+      <!-- Non-blocking error banner. Never uses alert() so the projected
+           display is never interrupted by a modal dialog. -->
+      <div id="error-banner" class="error-banner" role="alert" hidden></div>
+    </div>
+
+    <script type="module" src="./main.js"></script>
+  </body>
+</html>

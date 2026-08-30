@@ -1,0 +1,1165 @@
+/* ---- Design tokens ---- */
+:root {
+  --bg: #0f1115;
+  --surface: #1a1e27;
+  --surface-2: #232936;
+  --text: #f2f4f8;
+  --text-dim: #98a2b3;
+  --accent: #ff5a3c;
+  --accent-2: #37c8ab;
+  --danger: #e5484d;
+  --line: #2c333f;
+  --radius: 14px;
+  --touch: 64px; /* minimum touch target for a tablet kiosk */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+  /* Kiosk: disable text selection / long-press callouts. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.app__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+/* [hidden] must win over display:flex above (header hidden during a game). */
+.app__header[hidden] {
+  display: none;
+}
+
+.app__title {
+  font-size: 1.4rem;
+  margin: 0;
+  letter-spacing: 0.5px;
+}
+
+.app__header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.app__session {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+
+/* "End session" (close the lane) — danger-tinted so it reads as destructive. */
+.app__end-session {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.screen {
+  flex: 1;
+  overflow: auto;
+  padding: 24px;
+}
+
+/* ---- Buttons ---- */
+.btn {
+  min-height: var(--touch);
+  padding: 0 28px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: transform 0.05s ease;
+}
+.btn:active {
+  transform: scale(0.97);
+}
+.btn--primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a0d09;
+}
+.btn--ghost {
+  background: transparent;
+}
+.btn--danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}
+/* Compact variant for in-game nav (e.g. "← Menu"). */
+.btn--sm {
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 0.95rem;
+}
+
+/* ---- Menu (game selection) ---- */
+.menu {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  max-width: 900px;
+  margin: 40px auto;
+}
+.menu__card {
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  font-size: 1.4rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+.menu__card:active {
+  border-color: var(--accent);
+}
+
+/* ---- Player entry form ---- */
+.players {
+  max-width: 640px;
+  margin: 24px auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.players__heading {
+  margin: 0;
+  font-size: 1.6rem;
+}
+.players__add {
+  display: flex;
+  gap: 12px;
+}
+.players__input {
+  flex: 1 1 auto;
+  min-height: var(--touch);
+  padding: 0 18px;
+  font-size: 1.1rem;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.players__input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.players__empty {
+  color: var(--text-dim);
+  margin: 0;
+}
+.players__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.players__row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 8px 8px 18px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.players__row--editing {
+  padding: 8px;
+}
+.players__name {
+  flex: 1 1 auto;
+  font-size: 1.2rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.players__delete {
+  color: var(--danger);
+  min-width: var(--touch);
+  padding: 0;
+}
+.players__footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+/* ---- Generic game layout ---- */
+.game {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.game__bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex: 0 0 auto;
+}
+
+/* Info button: pushed to the far right of the game bar, circular. */
+.game__info {
+  margin-left: auto;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  font-style: italic;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+/* ---- Bare-bones target: a big centered box (~80% of the screen). ----
+   Still used by the games that don't have a real board yet (Tic-Tac-Toe,
+   Connect 4). The Target game replaces this with the interactive .tb board. */
+.target-box {
+  flex: 1 1 auto;
+  align-self: center;
+  width: 80vw;
+  max-height: 80vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+}
+
+/* ---- Interactive target board (Target game) ----
+   Built to read clearly when the tablet screen is recorded and projected onto
+   the physical target: big high-contrast SVG, bold labels, large touch zones. */
+.tb {
+  flex: 1 1 auto;
+  min-height: 0; /* allow the target to shrink within the flex column */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Status line: whose throw it is + round/throw. Large so it's readable across
+   the room / on the projected feed. */
+.tb__status {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  min-height: 44px;
+}
+.tb__status-name {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+}
+.tb__status-meta {
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.tb__status-done {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--accent-2);
+  letter-spacing: 1px;
+}
+
+/* The target itself. Square, as large as the row allows, centred. */
+.tb__target {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.tb__svg {
+  height: 100%;
+  max-height: 100%;
+  width: auto;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  /* Subtle backing so the outer ring's white outline reads on the dark app bg. */
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.5));
+}
+
+/* Tap zones: the whole ring/dot group is the target. Pointer + press feedback. */
+.tb__zone {
+  cursor: pointer;
+}
+.tb__zone circle {
+  transition: opacity 0.08s ease;
+}
+.tb__zone:active circle {
+  opacity: 0.8;
+}
+.tb__zone-label {
+  fill: #fff;
+  font-weight: 800;
+  paint-order: stroke;
+  stroke: rgba(0, 0, 0, 0.55);
+  stroke-width: 0.6;
+  pointer-events: none; /* taps go to the group, not the numeral */
+}
+.tb--done .tb__zone,
+.tb__zone--disabled {
+  cursor: default;
+}
+.tb--done .tb__svg {
+  opacity: 0.5;
+}
+
+/* Control row: MISS (0) + Undo. Big touch targets. */
+.tb__controls {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+.tb__miss {
+  background: #444b59;
+  border-color: #5a6474;
+  color: #fff;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+.tb__miss:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.tb__undo {
+  font-size: 1rem;
+}
+
+/* ---- Interactive 501 dartboard ----
+   Same projector-first framing as the target (big square SVG, bold status,
+   large controls), but the board itself keeps the realistic dartboard look
+   ported from dartboard.html: dark cabinet, cream/black wedges, red/green
+   multiplier bands, thin wires, and cream numerals. */
+.db {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Count-down scoreboard: one row per player, name + remaining. */
+.db__scores {
+  flex: 0 0 auto;
+  width: min(560px, 92%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.db__score-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.db__score-row--tappable {
+  cursor: pointer;
+}
+.db__score-row--active {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+.db__score-row--leader {
+  background: var(--surface-2);
+}
+.db__score-row--winner {
+  border-color: var(--accent-2);
+  box-shadow: inset 0 0 0 1px var(--accent-2);
+}
+.db__score-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.db__crown {
+  font-size: 1.1rem;
+}
+.db__score-playername {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.db__score-remaining {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.db__score-row--active .db__score-remaining {
+  color: var(--accent);
+}
+.db__score-row--winner .db__score-remaining {
+  color: var(--accent-2);
+}
+
+/* Status line: whose throw + remaining/dart, or the winner. */
+.db__status {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  min-height: 40px;
+}
+.db__status-name {
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+}
+.db__status-meta {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-dim);
+  font-variant-numeric: tabular-nums;
+}
+.db__status-done {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--accent-2);
+  letter-spacing: 1px;
+}
+
+/* The dartboard itself: square, as large as the row allows, centred. */
+.db__target {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.db__svg {
+  height: 100%;
+  max-height: 100%;
+  width: auto;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  filter: drop-shadow(0 20px 44px rgba(0, 0, 0, 0.6));
+}
+
+/* Wedge segments + bull: the whole path/circle is the tap target. Brighten on
+   hover/focus and dim slightly on press, matching the source dartboard feel. */
+.db__seg,
+.db__bull {
+  cursor: pointer;
+  transition: filter 0.12s ease;
+}
+.db__seg:hover,
+.db__bull:hover {
+  filter: brightness(1.4) saturate(1.05);
+}
+.db__seg:focus-visible,
+.db__bull:focus-visible {
+  outline: none;
+  filter: brightness(1.55);
+}
+.db__seg:active,
+.db__bull:active {
+  filter: brightness(0.9);
+}
+.db__seg--disabled {
+  cursor: default;
+}
+
+/* Cream numerals around the rim. */
+.db__num {
+  fill: #efeadf;
+  font-weight: 700;
+  font-size: 46px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  user-select: none;
+  pointer-events: none;
+  letter-spacing: 0.5px;
+}
+
+/* Once the game is won, grey the board out and stop the tap feedback. */
+.db--done .db__seg,
+.db--done .db__bull {
+  cursor: default;
+  filter: none;
+}
+.db--done .db__svg {
+  opacity: 0.5;
+}
+
+/* Control row: MISS (0) + Undo. */
+.db__controls {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  min-height: var(--touch);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .db__seg,
+  .db__bull {
+    transition: none;
+  }
+}
+
+/* ---- Interactive Tic-Tac-Toe board ----
+   Same projector-first approach as the target: a big high-contrast SVG with a
+   heavy white grid and thick X / O marks in the two accent colours, so each
+   mark reads clearly on the projected feed. */
+.ttt {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Status line: whose turn (with their mark) or the result. Large + bold. */
+.ttt__status {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 52px;
+}
+.ttt__status-name {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+/* The X/O badge next to the current player's name. */
+.ttt__badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  font-size: 1.5rem;
+  font-weight: 900;
+  line-height: 1;
+  color: #0f1115;
+}
+.ttt__badge--x {
+  background: var(--accent);
+}
+.ttt__badge--o {
+  background: var(--accent-2);
+}
+.ttt__status-done {
+  font-size: 1.9rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+.ttt__status-done--x {
+  color: var(--accent);
+}
+.ttt__status-done--o {
+  color: var(--accent-2);
+}
+.ttt__status--done .ttt__status-done {
+  animation: ttt-pop 0.32s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+/* The board itself. Square, as large as the row allows, centred. */
+.ttt__board {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ttt__svg {
+  height: 100%;
+  max-height: 100%;
+  width: auto;
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.5));
+}
+
+/* Cells: the whole square is the tap target. */
+.ttt__cell {
+  cursor: pointer;
+}
+.ttt__cell--locked {
+  cursor: default;
+}
+/* Press feedback: dim the cell's hit-rect area briefly on tap. */
+.ttt__cell:not(.ttt__cell--locked):active .ttt__hit {
+  fill: rgba(255, 255, 255, 0.08);
+}
+
+/* Marks animate in when played so a fresh mark is obvious on the feed. */
+.ttt__mark--x {
+  animation: ttt-draw 0.18s ease both;
+}
+.ttt__mark--o {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ttt-pop 0.22s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+/* Winning line: a bright glowing bar over the three cells. */
+.ttt__win {
+  stroke: #ffffff;
+  stroke-width: 14;
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.9));
+  animation: ttt-strike 0.28s ease both;
+}
+
+/* Rematch control row. Reserve the row when empty so the board doesn't jump. */
+.ttt__controls {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  min-height: var(--touch);
+}
+.ttt__controls--empty {
+  visibility: hidden;
+}
+.ttt__new {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+@keyframes ttt-pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+@keyframes ttt-draw {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes ttt-strike {
+  from {
+    opacity: 0;
+    stroke-width: 4;
+  }
+  to {
+    opacity: 1;
+    stroke-width: 14;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ttt__mark--x,
+  .ttt__mark--o,
+  .ttt__win,
+  .ttt__status--done .ttt__status-done {
+    animation: none;
+  }
+}
+
+/* ---- Interactive Connect 4 board ----
+   Same projector-first approach as the target/tic-tac-toe: the classic solid
+   blue board with holes punched through it and big discs in the two accent
+   colours. Whole columns are the tap target. */
+.c4 {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.c4__status {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 52px;
+}
+.c4__status-name {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: 0.5px;
+}
+/* The colour dot next to the current player's name. */
+.c4__dot {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.25);
+}
+.c4__dot--x {
+  background: var(--accent);
+}
+.c4__dot--o {
+  background: var(--accent-2);
+}
+.c4__status-done {
+  font-size: 1.9rem;
+  font-weight: 900;
+  letter-spacing: 0.5px;
+  color: var(--text);
+}
+.c4__status-done--x {
+  color: var(--accent);
+}
+.c4__status-done--o {
+  color: var(--accent-2);
+}
+.c4__status--done .c4__status-done {
+  animation: ttt-pop 0.32s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.c4__board {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.c4__svg {
+  height: 100%;
+  max-height: 100%;
+  width: auto;
+  max-width: 100%;
+  /* 7 columns x 6 rows. */
+  aspect-ratio: 7 / 6;
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.5));
+}
+
+/* Discs pop in as they land. */
+.c4__disc {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ttt-pop 0.22s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+/* Column tap targets: highlight the whole column on hover / press so the
+   referee sees where the disc will drop. */
+.c4__col {
+  cursor: pointer;
+}
+.c4__col:hover,
+.c4__col:active {
+  fill: rgba(255, 255, 255, 0.1);
+}
+.c4__col--disabled {
+  cursor: default;
+}
+
+/* Winning four: a bright glowing ring over each disc. */
+.c4__win {
+  stroke: #ffffff;
+  stroke-width: 8;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.9));
+  animation: c4-win-in 0.3s ease both;
+}
+
+.c4__controls {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  min-height: var(--touch);
+}
+.c4__controls--empty {
+  visibility: hidden;
+}
+.c4__new {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+@keyframes c4-win-in {
+  from {
+    opacity: 0;
+    stroke-width: 2;
+  }
+  to {
+    opacity: 1;
+    stroke-width: 8;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .c4__disc,
+  .c4__win,
+  .c4__status--done .c4__status-done {
+    animation: none;
+  }
+}
+
+/* Active thrower row on the scoreboard, and tappable rows for referee override. */
+.sb__row--tappable {
+  cursor: pointer;
+}
+.sb__row--active {
+  background: rgba(255, 90, 60, 0.22); /* accent tint */
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+.sb__row--active .sb__cell--name {
+  color: var(--accent);
+}
+
+/* ---- Scoreboard (bowling-style, above the game board) ---- */
+/* All text is forced white so it stays legible when projected. */
+.sb {
+  flex: 0 0 auto;
+  margin-bottom: 20px;
+  animation: sb-in 0.35s ease both;
+}
+@keyframes sb-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sb {
+    animation: none;
+  }
+}
+
+/* Solid black panel + bright white text: the highest-contrast combo a
+   projector can render. No dark-grey fills or thin lines to wash out. */
+.sb__grid {
+  overflow-x: auto;
+  background: #000;
+  border-radius: 10px;
+  padding: 4px 8px;
+}
+
+.sb__row {
+  display: grid;
+  /* name | one column per round | total */
+  grid-template-columns:
+    minmax(96px, 1.4fr)
+    repeat(var(--sb-rounds), minmax(40px, 1fr))
+    minmax(56px, 0.9fr);
+  align-items: stretch;
+}
+/* Divider between rows only — one hairline instead of a box per cell. */
+.sb__row + .sb__row {
+  border-top: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.sb__cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 3px 6px;
+  color: #fff; /* white text everywhere for projector legibility */
+  font-size: 1.2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Header row */
+.sb__row--head .sb__cell {
+  min-height: 28px;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 1px;
+  color: #fff;
+}
+
+/* Name cell: left-aligned, name may ellipsize */
+.sb__cell--name {
+  justify-content: flex-start;
+  gap: 6px;
+  font-size: 1rem;
+}
+.sb__playername {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sb__crown {
+  flex: 0 0 auto;
+  font-size: 0.95rem;
+}
+
+/* Unplayed round: the "/" placeholder. Still fully white, just lighter
+   weight so a real score reads as "filled in" next to it. */
+.sb__cell--empty {
+  color: #fff;
+  font-weight: 500;
+}
+
+/* Total cell: accent text so the standing pops without a dark fill. */
+.sb__cell--total {
+  color: var(--accent);
+  font-size: 1.3rem;
+  font-weight: 800;
+}
+.sb__row--head .sb__cell--total {
+  color: #fff;
+}
+
+/* Leader row: accent name so the frontrunner is obvious at a glance. */
+.sb__row--leader .sb__cell--name,
+.sb__row--leader .sb__cell--total {
+  color: var(--accent);
+}
+
+/* ---- Loading screen ---- */
+.loading {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: #1552d0; /* solid blue splash during app initialization */
+  color: #fff;
+  /* Fade out smoothly once boot completes (see .loading--hidden). */
+  opacity: 1;
+  transition: opacity 0.35s ease;
+}
+.loading--hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.loading__spinner {
+  width: 56px;
+  height: 56px;
+  border: 5px solid rgba(255, 255, 255, 0.25);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: loading-spin 0.9s linear infinite;
+}
+.loading__text {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+@keyframes loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .loading__spinner {
+    animation: none;
+  }
+  .loading {
+    transition: none;
+  }
+}
+
+/* ---- Info / how-to-play card ---- */
+.info-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.6);
+  animation: info-fade 0.2s ease both;
+}
+@keyframes info-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.info-card {
+  position: relative;
+  width: min(560px, 90vw);
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: 28px 28px 32px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: info-pop 0.2s ease both;
+}
+@keyframes info-pop {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .info-overlay,
+  .info-card {
+    animation: none;
+  }
+}
+
+.info-card__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.info-card__close:active {
+  transform: scale(0.95);
+}
+
+.info-card__title {
+  margin: 0 40px 16px 0; /* keep clear of the close button */
+  font-size: 1.5rem;
+}
+.info-card__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.info-card__p {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+/* ---- Confirm dialog (in-app replacement for window.confirm) ---- */
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(0, 0, 0, 0.6);
+  animation: info-fade 0.2s ease both;
+}
+
+.confirm-card {
+  width: min(460px, 90vw);
+  padding: 28px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: info-pop 0.2s ease both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .confirm-overlay,
+  .confirm-card {
+    animation: none;
+  }
+}
+
+.confirm-card__title {
+  margin: 0 0 12px;
+  font-size: 1.4rem;
+}
+.confirm-card__message {
+  margin: 0 0 24px;
+  font-size: 1.05rem;
+  line-height: 1.5;
+  color: var(--text);
+}
+.confirm-card__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.confirm-card__btn {
+  min-height: 52px;
+  padding: 0 22px;
+}
+
+/* ---- Error banner ---- */
+.error-banner {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  max-width: 90%;
+  padding: 14px 22px;
+  background: var(--danger);
+  color: #fff;
+  border-radius: var(--radius);
+  font-size: 0.95rem;
+  z-index: 1000;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.error-banner[hidden] {
+  display: none;
+}
