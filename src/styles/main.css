@@ -374,6 +374,52 @@ body {
   font-size: 1rem;
 }
 
+/* ---- Shared ring-target boards (Axe Classic, WATL, IATF) ----
+   Ports the axe-target look from the WATL/IATF prototypes verbatim: a near-black
+   target field, heavy white concentric ring lines, a red bullseye/cluster, and
+   glowing blue killshot/clutch dots. Reuses the .tb chrome (status + controls);
+   only the SVG zones need their own colours. */
+.rt__disc {
+  fill: #0a0a0b;
+}
+.rt__line {
+  fill: none;
+  stroke: #f4f4f2;
+  pointer-events: none; /* taps fall through to the discs beneath */
+}
+.rt__cluster {
+  fill: #d63a2f;
+  stroke: #f4f4f2;
+  stroke-width: 3;
+}
+.rt__killshot {
+  fill: #2f6fd6;
+  stroke: #f4f4f2;
+  stroke-width: 3;
+  filter: drop-shadow(0 0 9px rgba(47, 111, 214, 0.6));
+}
+.rt__clutch {
+  fill: #2f6fd6;
+  stroke: #eef4ff;
+  stroke-width: 4;
+  filter: drop-shadow(0 0 10px rgba(47, 111, 214, 0.6));
+}
+/* Full-board miss zone: invisible, just a large tap-to-miss target. */
+.rt__miss-zone {
+  fill: transparent;
+}
+/* Press feedback on the ring/dot circles (they are the tap targets directly,
+   unlike the Axe Classic ring-groups, so target the element itself). */
+.rt__svg .tb__zone {
+  cursor: pointer;
+}
+.rt__svg .tb__zone:active {
+  opacity: 0.82;
+}
+.tb--done .rt__svg .tb__zone {
+  cursor: default;
+}
+
 /* ---- Interactive 501 dartboard ----
    Same projector-first framing as the target (big square SVG, bold status,
    large controls), but the board itself keeps the realistic dartboard look

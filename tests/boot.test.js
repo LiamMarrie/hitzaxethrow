@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { writeJSON, __PREFIX__ } from '../src/lib/storage.js';
 import { __keys__ } from '../src/lib/session.js';
 import { createState } from '../src/games/tictactoe.js';
+import { createState as createWatlState } from '../src/games/watl.js';
 
 /**
  * Boot / restore regression tests.
@@ -117,6 +118,26 @@ describe('boot / session restore', () => {
     // It renders the game screen (with its interactive board), not the menu.
     expect(screen.querySelector('.game')).not.toBeNull();
     expect(screen.querySelector('.ttt')).not.toBeNull();
+    expect(screen.querySelector('.menu')).toBeNull();
+  });
+
+  it('restores a valid in-progress ring-target game (WATL) into its board', async () => {
+    writeJSON(__keys__.CURRENT_KEY, {
+      id: 'restore-watl',
+      createdAt: Date.now(),
+      game: 'watl',
+      state: createWatlState([
+        { id: 'a', name: 'A' },
+        { id: 'b', name: 'B' },
+      ]),
+    });
+
+    await boot();
+
+    const screen = document.getElementById('screen');
+    expect(screen.querySelector('.game')).not.toBeNull();
+    // The shared ring-target board (.tb) with its SVG target renders.
+    expect(screen.querySelector('.tb__svg')).not.toBeNull();
     expect(screen.querySelector('.menu')).toBeNull();
   });
 });

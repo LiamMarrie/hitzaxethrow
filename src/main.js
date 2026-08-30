@@ -29,6 +29,8 @@ import { GAMES, getGame } from './games/index.js';
 import { renderMenu, renderPlayers, mount } from './ui/render.js';
 import {
   renderTarget,
+  renderWatl,
+  renderIatf,
   renderDartboard,
   renderTicTacToe,
   renderConnect4,
@@ -71,6 +73,8 @@ function hideLoadingScreen() {
 /** Map a game key to its screen renderer. */
 const SCREENS = {
   target: renderTarget,
+  watl: renderWatl,
+  iatf: renderIatf,
   dartboard: renderDartboard,
   tictactoe: renderTicTacToe,
   connect4: renderConnect4,

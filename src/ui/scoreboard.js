@@ -14,7 +14,7 @@ import {
   roundPlayed,
   totalScore,
   activePosition,
-} from '../games/target.js';
+} from '../games/ring-target-scoring.js';
 
 /**
  * Render the scoreboard for a target-game state.

@@ -10,6 +10,8 @@
 import { el } from './render.js';
 import { renderScoreboard } from './scoreboard.js';
 import { renderTargetBoard } from './target-board.js';
+import { renderWatlBoard } from './watl-board.js';
+import { renderIatfBoard } from './iatf-board.js';
 import { renderDartboardBoard } from './dartboard-board.js';
 import { renderTicTacToeBoard } from './tictactoe-board.js';
 import { renderConnect4Board } from './connect4-board.js';
@@ -20,13 +22,31 @@ import { renderConnect4Board } from './connect4-board.js';
  * @type {Object<string,{title:string,paragraphs:string[]}>}
  */
 const HOW_TO_PLAY = {
-  Target: {
-    title: 'How to play — Target',
+  'Axe Classic': {
+    title: 'How to play — Axe Classic',
     paragraphs: [
       'Take turns throwing the axe at the target. A game is 5 rounds, and each round is 5 throws.',
-      'Score each throw by where it lands: a miss is 0, the outer rings are 1, 2, and 3, and a clutch (the small top-corner dots) is worth 5.',
+      'Score each throw by where it lands: a miss is 0, the five rings score 1, 2, 3, 4, and 5 from the outside in, and the red bullseye centre is worth 6. No clutch or killshot — just where the axe sticks.',
       'Your round score is the sum of that round’s five throws. The running total on the right is the sum of every round.',
       'A round shows “/” until it’s thrown. Highest total after 5 rounds wins.',
+    ],
+  },
+  'WATL Standard': {
+    title: 'How to play — WATL Standard',
+    paragraphs: [
+      'The World Axe Throwing League format. Take turns throwing the axe: a game is 5 rounds of 5 throws each.',
+      'The five rings score 1 to 5 from the outside in, and the bullseye cluster in the centre is worth 6.',
+      'The two pairs of blue killshot dots are always live and score 8 each — hitting a ring instead just scores that ring, with no penalty.',
+      'A miss is 0. Your round score is the sum of its five throws; highest total after 5 rounds wins.',
+    ],
+  },
+  'IATF Standard': {
+    title: 'How to play — IATF Standard',
+    paragraphs: [
+      'The International Axe Throwing Federation format. Take turns throwing the axe: a game is 5 rounds of 5 throws each.',
+      'The outer ring scores 1, the middle ring 3, and the bullseye 5.',
+      'The two blue clutch dots are always live and score 7 each — hitting a ring instead just scores that ring, with no penalty.',
+      'A miss is 0. Your round score is the sum of its five throws; highest total after 5 rounds wins.',
     ],
   },
   501: {
@@ -161,7 +181,57 @@ export function renderTarget(state, handlers) {
     onPickPlayer: handlers.onPickPlayer,
     activeOverrideId: handlers.activeOverrideId ?? null,
   });
-  return renderGameShell('Target', handlers, scoreboard, board);
+  return renderGameShell('Axe Classic', handlers, scoreboard, board);
+}
+
+/**
+ * WATL Standard screen — shared scoreboard above the WATL target board.
+ * @param {import('../games/ring-target-scoring.js').GameState} state
+ * @param {{
+ *   onBack:()=>void,
+ *   onThrow:(value:number)=>void,
+ *   onUndo:()=>void,
+ *   onPickPlayer?:(playerId:string)=>void,
+ *   activeOverrideId?:string|null,
+ * }} handlers
+ * @returns {HTMLElement}
+ */
+export function renderWatl(state, handlers) {
+  const board = renderWatlBoard(state, {
+    onThrow: handlers.onThrow,
+    onUndo: handlers.onUndo,
+    activeOverrideId: handlers.activeOverrideId ?? null,
+  });
+  const scoreboard = renderScoreboard(state, {
+    onPickPlayer: handlers.onPickPlayer,
+    activeOverrideId: handlers.activeOverrideId ?? null,
+  });
+  return renderGameShell('WATL Standard', handlers, scoreboard, board);
+}
+
+/**
+ * IATF Standard screen — shared scoreboard above the IATF target board.
+ * @param {import('../games/ring-target-scoring.js').GameState} state
+ * @param {{
+ *   onBack:()=>void,
+ *   onThrow:(value:number)=>void,
+ *   onUndo:()=>void,
+ *   onPickPlayer?:(playerId:string)=>void,
+ *   activeOverrideId?:string|null,
+ * }} handlers
+ * @returns {HTMLElement}
+ */
+export function renderIatf(state, handlers) {
+  const board = renderIatfBoard(state, {
+    onThrow: handlers.onThrow,
+    onUndo: handlers.onUndo,
+    activeOverrideId: handlers.activeOverrideId ?? null,
+  });
+  const scoreboard = renderScoreboard(state, {
+    onPickPlayer: handlers.onPickPlayer,
+    activeOverrideId: handlers.activeOverrideId ?? null,
+  });
+  return renderGameShell('IATF Standard', handlers, scoreboard, board);
 }
 
 /**

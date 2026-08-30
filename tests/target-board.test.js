@@ -9,16 +9,16 @@ const players = [
 
 const noop = () => {};
 
-describe('renderTargetBoard', () => {
-  it('renders an SVG target with all five scoring zones', () => {
+describe('renderTargetBoard (Axe Classic)', () => {
+  it('renders an SVG target with all six scoring zones', () => {
     const board = renderTargetBoard(createState(players), {
       onThrow: noop,
       onUndo: noop,
     });
     const svg = board.querySelector('svg.tb__svg');
     expect(svg).not.toBeNull();
-    // 3 rings + 2 clutch dots = 5 tappable zones.
-    expect(board.querySelectorAll('.tb__zone').length).toBe(5);
+    // 5 rings + red bullseye = 6 tappable zones (no clutch/killshot dots).
+    expect(board.querySelectorAll('.tb__zone').length).toBe(6);
   });
 
   it('shows the active thrower and round/throw in the status line', () => {
@@ -32,16 +32,26 @@ describe('renderTargetBoard', () => {
     );
   });
 
-  it('calls onThrow with the zone value when a zone is tapped', () => {
+  it('calls onThrow with 6 when the red bullseye is tapped', () => {
     const onThrow = vi.fn();
     const board = renderTargetBoard(createState(players), {
       onThrow,
       onUndo: noop,
     });
-    // The bullseye (value 3) is the innermost ring.
     const bull = board.querySelector('[aria-label^="Bullseye"]');
     bull.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
-    expect(onThrow).toHaveBeenCalledWith(3);
+    expect(onThrow).toHaveBeenCalledWith(6);
+  });
+
+  it('calls onThrow with 1 when the outer (1) ring is tapped', () => {
+    const onThrow = vi.fn();
+    const board = renderTargetBoard(createState(players), {
+      onThrow,
+      onUndo: noop,
+    });
+    const outer = board.querySelector('[aria-label^="1 ring"]');
+    outer.dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
+    expect(onThrow).toHaveBeenCalledWith(1);
   });
 
   it('calls onThrow(0) when MISS is tapped', () => {
@@ -74,7 +84,6 @@ describe('renderTargetBoard', () => {
     expect(board.querySelector('.tb__status-done').textContent).toBe(
       'Game complete'
     );
-    // Tapping a zone after completion records nothing.
     board
       .querySelector('[aria-label^="Bullseye"]')
       .dispatchEvent(new window.MouseEvent('click', { bubbles: true }));
