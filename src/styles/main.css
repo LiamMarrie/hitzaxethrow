@@ -146,6 +146,16 @@ body {
 .menu__card:active {
   border-color: var(--accent);
 }
+.menu__footer {
+  display: flex;
+  justify-content: center;
+  max-width: 900px;
+  margin: 0 auto 40px;
+}
+.menu__edit-players {
+  font-size: 1.1rem;
+  padding: 12px 28px;
+}
 
 /* ---- Player entry form ---- */
 .players {

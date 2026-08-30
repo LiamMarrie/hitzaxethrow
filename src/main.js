@@ -141,7 +141,7 @@ function render() {
     return;
   }
   if (!session.game) {
-    mount(screenEl, renderMenu(GAMES, selectGame));
+    mount(screenEl, renderMenu(GAMES, selectGame, goToPlayers));
     return;
   }
   const renderer = SCREENS[session.game];
@@ -322,6 +322,19 @@ function goToMenuStage() {
     return;
   }
   session.stage = 'menu';
+  editingPlayerId = null;
+  saveSession(session);
+  render();
+}
+
+/**
+ * Return from the menu to the player-entry screen so the roster can be
+ * changed between games. Unlike "End session", this KEEPS the current session
+ * and its players — add/edit/remove there persist onto the existing roster via
+ * the session helpers — it just switches which pre-game screen is shown.
+ */
+function goToPlayers() {
+  session.stage = 'players';
   editingPlayerId = null;
   saveSession(session);
   render();

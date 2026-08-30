@@ -179,13 +179,16 @@ function renderPlayerRow(player, editingId, { onEdit, onDelete, onBeginEdit }) {
 }
 
 /**
- * Render the game-selection menu.
+ * Render the game-selection menu: a grid of game cards plus a footer button
+ * that returns to the player-entry screen to add/edit/remove players. The
+ * footer button is always present so the roster can be changed between games.
  * @param {{key:string,name:string}[]} games
  * @param {(key:string)=>void} onSelect
+ * @param {()=>void} onEditPlayers  return to the player-entry screen
  * @returns {HTMLElement}
  */
-export function renderMenu(games, onSelect) {
-  return el(
+export function renderMenu(games, onSelect, onEditPlayers) {
+  const grid = el(
     'div',
     { class: 'menu' },
     games.map((g) =>
@@ -196,4 +199,14 @@ export function renderMenu(games, onSelect) {
       })
     )
   );
+
+  const footer = el('div', { class: 'menu__footer' }, [
+    el('button', {
+      class: 'btn btn--ghost menu__edit-players',
+      text: 'Edit players',
+      onClick: onEditPlayers,
+    }),
+  ]);
+
+  return el('div', { class: 'menu-screen' }, [grid, footer]);
 }
