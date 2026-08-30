@@ -967,6 +967,235 @@ body {
   }
 }
 
+/* ---- Interactive Pairs (memory match) board ----
+   Ports the Pairs prototype look: a 3x3 grid of face-down cards with a glowing
+   "?" cover that flips in 3D to reveal a playing card or the wild Joker on a
+   cream face. Matched pairs lock with a green glow; the leftover card flips up
+   with a purple glow on the win screen. Whole cards are the tap target. */
+.pairs {
+  --pairs-purple: #8b7cf0;
+  --pairs-red: #c62f28;
+  --pairs-black: #1b1b1b;
+  --pairs-match: #3ac07a;
+  --pairs-gold: #d9a441;
+  --pairs-radius: 16px;
+  --pairs-flip: 0.5s;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.pairs__status {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-height: 52px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.pairs__status-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text-dim);
+}
+.pairs__status-count {
+  font-size: 1.9rem;
+  font-weight: 900;
+  color: var(--text);
+  letter-spacing: 0.02em;
+}
+.pairs__status-done {
+  font-size: 1.9rem;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: var(--pairs-match);
+  text-transform: none;
+}
+.pairs__status--done .pairs__status-done {
+  animation: ttt-pop 0.32s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+
+.pairs__board {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pairs__grid {
+  width: min(92%, 62vh);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(10px, 2.4vw, 22px);
+}
+
+/* card = the sized box (grid item). Height comes from aspect-ratio. */
+.pairs__card {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  display: block;
+  position: relative;
+  aspect-ratio: 1 / 1.05;
+  perspective: 1100px;
+  cursor: pointer;
+  border-radius: var(--pairs-radius);
+}
+.pairs__card:focus-visible .pairs__flipper {
+  outline: 2px solid var(--pairs-purple);
+  outline-offset: 3px;
+  border-radius: var(--pairs-radius);
+}
+
+/* flipper fills the card and rotates in 3D on flip. */
+.pairs__flipper {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform var(--pairs-flip) cubic-bezier(0.2, 0.7, 0.2, 1.2);
+}
+.pairs__card.flipped .pairs__flipper {
+  transform: rotateY(180deg);
+}
+
+.pairs__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: var(--pairs-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+/* face-down cover with the "?" */
+.pairs__face--cover {
+  background:
+    radial-gradient(60% 60% at 50% 45%, rgba(139, 124, 240, 0.16), transparent 70%),
+    #090a0d;
+  border: 1.5px solid rgba(228, 234, 255, 0.5);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6);
+}
+.pairs__qmark {
+  font-size: min(15vw, 64px);
+  font-weight: 800;
+  color: var(--pairs-purple);
+  text-shadow:
+    0 0 18px rgba(139, 124, 240, 0.65),
+    0 0 4px rgba(139, 124, 240, 0.9);
+}
+
+/* revealed face */
+.pairs__face--reveal {
+  transform: rotateY(180deg);
+  background: linear-gradient(160deg, #fbfaf5, #eae6da);
+  border: 1.5px solid rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.08);
+}
+.pairs__reveal {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2%;
+  line-height: 1;
+}
+.pairs__rank {
+  font-size: min(17vw, 74px);
+  font-weight: 800;
+}
+.pairs__suit {
+  font-size: min(9vw, 38px);
+}
+.pairs__reveal.is-red {
+  color: var(--pairs-red);
+}
+.pairs__reveal.is-black {
+  color: var(--pairs-black);
+}
+
+/* Joker face */
+.pairs__face--reveal.joker {
+  background:
+    radial-gradient(70% 70% at 50% 45%, rgba(139, 124, 240, 0.16), transparent 72%),
+    linear-gradient(160deg, #fbfaf5, #e9e5d8);
+}
+.pairs__joker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.pairs__j-top,
+.pairs__j-bot {
+  font-size: min(4.4vw, 17px);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  color: #6b5bd6;
+}
+.pairs__j-star {
+  font-size: min(16vw, 66px);
+  line-height: 1;
+  color: var(--pairs-gold);
+  filter: drop-shadow(0 0 10px rgba(217, 164, 65, 0.55));
+}
+
+/* matched / leftover glows */
+.pairs__card.matched .pairs__flipper {
+  transform: rotateY(180deg) scale(0.97);
+}
+.pairs__card.matched .pairs__face--reveal {
+  box-shadow:
+    0 0 0 2px var(--pairs-match),
+    0 0 26px rgba(58, 192, 122, 0.5);
+}
+.pairs__card.matched {
+  cursor: default;
+}
+.pairs__card.leftover .pairs__face--reveal {
+  box-shadow:
+    0 0 0 2px rgba(139, 124, 240, 0.8),
+    0 0 24px rgba(139, 124, 240, 0.4);
+}
+
+.pairs__controls {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  min-height: var(--touch);
+}
+.pairs__controls--empty {
+  visibility: hidden;
+}
+.pairs__new {
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pairs__flipper {
+    transition: none;
+  }
+  .pairs__status--done .pairs__status-done {
+    animation: none;
+  }
+}
+
 /* Active thrower row on the scoreboard, and tappable rows for referee override. */
 .sb__row--tappable {
   cursor: pointer;

@@ -15,6 +15,7 @@ import { renderIatfBoard } from './iatf-board.js';
 import { renderDartboardBoard } from './dartboard-board.js';
 import { renderTicTacToeBoard } from './tictactoe-board.js';
 import { renderConnect4Board } from './connect4-board.js';
+import { renderPairsBoard } from './pairs-board.js';
 
 /**
  * How-to-play copy per game, shown in the info card. Each entry is a title and
@@ -72,6 +73,15 @@ const HOW_TO_PLAY = {
       'Two players take turns dropping discs into the columns. A disc falls to the lowest open slot in that column.',
       'Be the first to line up four of your discs in a row — horizontally, vertically, or diagonally.',
       'If the grid fills up before either player connects four, the round is a draw.',
+    ],
+  },
+  Pairs: {
+    title: 'How to play — Pairs',
+    paragraphs: [
+      'Nine cards sit face-down: four matching pairs plus one wild Joker. Tap a card to flip it up, then tap a second to try for a match.',
+      'A match locks both cards face-up; a mismatch flips both back down after a moment, so remember where they were.',
+      'The Joker is wild — it pairs with whatever card you flip alongside it.',
+      'Match all four pairs to win. One card is always left over at the end.',
     ],
   },
 };
@@ -287,4 +297,19 @@ export function renderConnect4(state, handlers) {
     onReset: handlers.onReset,
   });
   return renderGameShell('Connect 4', handlers, null, board);
+}
+
+/**
+ * Pairs screen — the interactive memory-match board (no scoreboard; the board
+ * carries the whole game state itself).
+ * @param {import('../games/pairs.js').GameState} state
+ * @param {{onBack:()=>void, onMove:(cell:number)=>void, onReset:()=>void}} handlers
+ * @returns {HTMLElement}
+ */
+export function renderPairs(state, handlers) {
+  const board = renderPairsBoard(state, {
+    onMove: handlers.onMove,
+    onReset: handlers.onReset,
+  });
+  return renderGameShell('Pairs', handlers, null, board);
 }

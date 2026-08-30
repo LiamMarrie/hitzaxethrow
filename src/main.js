@@ -34,6 +34,7 @@ import {
   renderDartboard,
   renderTicTacToe,
   renderConnect4,
+  renderPairs,
 } from './ui/screens.js';
 import { confirmDialog } from './ui/confirm.js';
 
@@ -78,6 +79,7 @@ const SCREENS = {
   dartboard: renderDartboard,
   tictactoe: renderTicTacToe,
   connect4: renderConnect4,
+  pairs: renderPairs,
 };
 
 /**
