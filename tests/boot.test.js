@@ -56,7 +56,7 @@ describe('boot / session restore', () => {
 
     const screen = document.getElementById('screen');
     expect(screen.querySelector('.menu')).not.toBeNull();
-    expect(screen.querySelectorAll('.menu__card').length).toBeGreaterThan(0);
+    expect(screen.querySelectorAll('.menu__row').length).toBeGreaterThan(0);
   });
 
   it('recovers when the restored game state is corrupt', async () => {
